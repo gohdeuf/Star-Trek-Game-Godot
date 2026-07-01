@@ -2,17 +2,42 @@ class_name Main
 extends Node3D
 # Hauptszene: setzt Umgebung, Schiff, Kamera, WorldManager, SOITracker,
 # Galaxiekarte und Hilfe-Overlay zusammen (siehe Referenz Abschnitte 5, 9-13).
+#
+# Bei einer brandneuen Welt (noch kein Save vorhanden) wird zuerst der
+# WorldSeedDialog gezeigt, damit der Spieler optional einen eigenen
+# World-Seed eingeben kann (siehe Referenz Abschnitt 3.4), bevor irgendeine
+# Sektorgenerierung stattfindet.
 
 const SAVE_INTERVAL := 2.0
+
+# Skybox-Asset-Pfad (siehe Referenz Abschnitt 9). Lege hier eine eigene
+# Equirectangular-Panorama-Textur ab (2:1 Seitenverhaeltnis), um die
+# prozedural generierte Platzhalter-Skybox zu ersetzen. WICHTIG: die Datei
+# muss dafuer im GEOEFFNETEN Godot-Editor liegen/importiert worden sein
+# (siehe assets/skybox/LIESMICH.txt), sonst findet load() sie nicht.
+const SKYBOX_ASSET_PATH := "res://assets/skybox/starfield_panorama.png"
 
 var ship: Node3D
 var camera_rig: CameraRig
 var world_manager: WorldManager
 var soi_tracker: SOITracker
 var _save_timer: float = 0.0
-var _world_ready: bool = false
 
 func _ready() -> void:
+	if GameDatabase.needs_seed_setup:
+		var dialog_scene: PackedScene = preload("res://scenes/UI/WorldSeedDialog.tscn")
+		var dialog: WorldSeedDialog = dialog_scene.instantiate()
+		add_child(dialog)
+		dialog.seed_confirmed.connect(_on_world_seed_confirmed.bind(dialog))
+	else:
+		_start_game()
+
+func _on_world_seed_confirmed(custom_seed_text: String, dialog: WorldSeedDialog) -> void:
+	GameDatabase.finish_new_world_setup(custom_seed_text)
+	dialog.queue_free()
+	_start_game()
+
+func _start_game() -> void:
 	_setup_environment()
 
 	var ship_scene: PackedScene = preload("res://scenes/Ship.tscn")
@@ -40,36 +65,60 @@ func _ready() -> void:
 	var help_scene: PackedScene = preload("res://scenes/UI/HelpOverlay.tscn")
 	add_child(help_scene.instantiate())
 
-	# Wenn neue Welt: zeige Dialog vor World-Aktivierung
-	if GameDatabase.needs_seed_setup:
-		world_manager.set_process(false)
-		var dialog_scene: PackedScene = preload("res://scenes/UI/WorldSeedDialog.tscn")
-		add_child(dialog_scene.instantiate())
-		# Warte, bis Seed gesetzt ist (Dialog wird `finish_new_world_setup` aufrufen)
-		while GameDatabase.needs_seed_setup:
-			await get_tree().process_frame
-		world_manager.set_process(true)
-	else:
-		_world_ready = true
-
 func _setup_environment() -> void:
-	# Platzhalter-Weltraum-Sky (ProceduralSkyMaterial), kein externes Asset
-	# noetig. Spaeter gegen PanoramaSkyMaterial + Sternenfeld-HDRI tauschbar
-	# (siehe Referenz Abschnitt 9).
+	# Skybox (siehe Referenz Abschnitt 9): nutzt ein Panorama-Asset aus
+	# res://assets/skybox/, falls vorhanden UND vom Editor importiert.
+	# Andernfalls wird ein prozedurales, World-Seed-basiertes Sternenfeld
+	# generiert (statt des alten einfarbigen ProceduralSkyMaterial-Platzhalters).
 	var env := WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
+
 	var sky := Sky.new()
-	var sky_material := ProceduralSkyMaterial.new()
-	sky_material.sky_top_color = Color(0.02, 0.02, 0.05)
-	sky_material.sky_horizon_color = Color(0.05, 0.05, 0.1)
-	sky_material.ground_bottom_color = Color(0.01, 0.01, 0.02)
-	sky_material.ground_horizon_color = Color(0.03, 0.03, 0.06)
-	sky.sky_material = sky_material
+	var pano_mat := PanoramaSkyMaterial.new()
+	if ResourceLoader.exists(SKYBOX_ASSET_PATH):
+		pano_mat.panorama = load(SKYBOX_ASSET_PATH)
+		print("Main: Skybox-Asset geladen (%s)" % [SKYBOX_ASSET_PATH])
+	else:
+		pano_mat.panorama = _build_procedural_starfield()
+		print("Main: Kein Skybox-Asset unter %s gefunden -> generiere prozedurales Sternenfeld." % [SKYBOX_ASSET_PATH])
+	sky.sky_material = pano_mat
+
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.environment = environment
 	add_child(env)
+
+## Generiert ein einfaches, deterministisches Sternenfeld-Panorama aus dem
+## World-Seed (Sterne als helle Punkte + leichte Nebel-Faerbung aus Noise).
+## Equirectangular (2:1), damit es 1:1 mit PanoramaSkyMaterial funktioniert.
+func _build_procedural_starfield() -> ImageTexture:
+	var width := 512
+	var height := 256
+	var img := Image.create(width, height, false, Image.FORMAT_RGB8)
+
+	var noise := FastNoiseLite.new()
+	noise.seed = int(GameDatabase.world_seed & 0x7fffffff)
+	noise.frequency = 0.015
+	noise.fractal_octaves = 3
+
+	for y in range(height):
+		for x in range(width):
+			var n := noise.get_noise_2d(float(x), float(y))
+			var nebula: float = clamp(n * 0.08, 0.0, 0.1)
+			img.set_pixel(x, y, Color(0.01 + nebula * 0.5, 0.01 + nebula * 0.35, 0.035 + nebula * 0.7))
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = GameDatabase.world_seed
+	var star_count := int(width * height * 0.012)
+	for i in range(star_count):
+		var x := rng.randi_range(0, width - 1)
+		var y := rng.randi_range(0, height - 1)
+		var brightness := rng.randf_range(0.35, 1.0)
+		var tint := rng.randf_range(0.85, 1.0)
+		img.set_pixel(x, y, Color(brightness, brightness * tint, brightness))
+
+	return ImageTexture.create_from_image(img)
 
 func _process(delta: float) -> void:
 	_save_timer += delta

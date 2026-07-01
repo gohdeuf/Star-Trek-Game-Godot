@@ -1,9 +1,7 @@
 class_name Moon
 extends Node3D
 # Mond: umkreist einen Elternplaneten auf Kreisbahn in der XZ-Ebene
-# (siehe Referenz Abschnitt 7). Aktuell als wiederverwendbare Komponente
-# vorbereitet; die automatische Zuordnung "welcher Planet bekommt einen
-# Mond" ist noch nicht in SectorGenerator verdrahtet (naechster Ausbauschritt).
+# (siehe Referenz Abschnitt 7).
 
 var parent_planet: Node3D
 var orbit_radius: float = 5.0

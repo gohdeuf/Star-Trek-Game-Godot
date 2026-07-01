@@ -23,6 +23,7 @@ const MAX_MOONS_ROCKY := 2
 const MAX_MOONS_GAS := 4
 
 const SOL_SECTOR_ID := "Sector_Alpha_0_0_0"
+const SECTOR_UTILS := preload("res://scripts/autoload/SectorUtils.gd")
 
 # Cache: sector_id -> generierte Systemdaten (leeres Dictionary = kein System)
 var _cache: Dictionary = {}
@@ -48,15 +49,15 @@ func _generate_sector(sector_id: String) -> Dictionary:
 	if sector_id == SOL_SECTOR_ID:
 		return _build_sol_system()
 
-	var sector_seed: int = SectorUtils.seed_for_sector(GameDatabase.world_seed, sector_id)
+	var sector_seed := SECTOR_UTILS.seed_for_sector(GameDatabase.world_seed, sector_id)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sector_seed
 
 	if rng.randf() > SYSTEM_SPAWN_CHANCE:
 		return {}
 
-	var coords: Vector3i = SectorUtils.sector_id_to_coords(sector_id)
-	var origin: Vector3 = Vector3(coords.x, coords.y, coords.z) * SectorUtils.SECTOR_SIZE
+	var coords := SECTOR_UTILS.sector_id_to_coords(sector_id)
+	var origin := Vector3(coords.x, coords.y, coords.z) * SECTOR_UTILS.SECTOR_SIZE
 	var star_pos := origin + Vector3(
 		rng.randf_range(0.0, SectorUtils.SECTOR_SIZE),
 		rng.randf_range(0.0, SectorUtils.SECTOR_SIZE),
@@ -68,14 +69,23 @@ func _generate_sector(sector_id: String) -> Dictionary:
 
 	var planet_count := rng.randi_range(PLANETS_MIN, PLANETS_MAX)
 	var planets: Array = []
-	var orbit_radius := 20.0
+	var orbit_radius := 0.0
+	var prev_planet_radius := 0.0
 	for i in range(planet_count):
 		var cls: String = PlanetClassDB.weighted_random_class(rng)
-		orbit_radius += rng.randf_range(15.0, 40.0)
-		var orbit_angle := rng.randf_range(0.0, 360.0)
-		var resources: Dictionary = PlanetClassDB.random_resources(rng, cls)
 		var radius_range: Array = PlanetClassDB.classes[cls]["radius"]
 		var planet_radius := rng.randf_range(radius_range[0], radius_range[1])
+
+		# BUGFIX: Der Abstand wird jetzt aus den tatsaechlichen Planetenradien
+		# (vorheriger + aktueller Planet) plus einem zufaelligen Sicherheits-
+		# abstand berechnet. Vorher war der Abstand ein fixer kleiner Wert
+		# unabhaengig von der Planetengroesse, wodurch sich vor allem grosse
+		# Gasriesen fast beruehren oder ueberlappen konnten.
+		orbit_radius += prev_planet_radius + planet_radius + rng.randf_range(45.0, 80.0)
+		prev_planet_radius = planet_radius
+
+		var orbit_angle := rng.randf_range(0.0, 360.0)
+		var resources: Dictionary = PlanetClassDB.random_resources(rng, cls)
 		var roman := _to_roman(i + 1)
 		var planet_name := "%s %s" % [star_name, roman]
 		planets.append({
@@ -87,7 +97,6 @@ func _generate_sector(sector_id: String) -> Dictionary:
 			"resources": resources,
 			"moons": _generate_moons(rng, cls, planet_radius, planet_name),
 		})
-		orbit_radius += rng.randf_range(5.0, 15.0)
 
 	return {
 		"system_id": sector_id + "_sys",

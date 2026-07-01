@@ -1,88 +1,80 @@
+class_name WorldSeedDialog
 extends Control
-# Dialog zum Erstellen einer neuen Welt beim allerersten Start.
-# Wenn GameDatabase.needs_seed_setup == true, wird dieser Dialog angezeigt
-# und der Spieler kann optional einen eigenen Seed eingeben oder den Standard
-# verwenden (siehe Referenz Abschnitt 3, Punkt 1+4).
+# Optionaler World-Seed-Dialog beim allerersten Start (Minecraft-Stil, siehe
+# Referenz Abschnitt 3.4). Wird von Main.gd nur angezeigt, wenn noch keine
+# gespeicherte Welt existiert (GameDatabase.needs_seed_setup == true). Der
+# Spieler kann einen eigenen Seed-Text eingeben oder leer lassen fuer einen
+# zufaelligen Seed.
 
-var seed_input: LineEdit
+signal seed_confirmed(custom_seed_text: String)
+
+var _line_edit: LineEdit
 
 func _ready() -> void:
-	# Nur zeigen, wenn neue Welt nötig ist
-	if not GameDatabase.needs_seed_setup:
-		queue_free()
-		return
-
-	# UI-Baum aufbauen
-	anchor_left = 0.0
-	anchor_top = 0.0
 	anchor_right = 1.0
 	anchor_bottom = 1.0
-	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	# Halb-transparentes Overlay
-	var overlay := ColorRect.new()
-	overlay.anchor_left = 0.0
-	overlay.anchor_top = 0.0
-	overlay.anchor_right = 1.0
-	overlay.anchor_bottom = 1.0
-	overlay.color = Color(0, 0, 0, 0.5)
-	add_child(overlay)
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0, 0, 0, 0.75)
+	backdrop.anchor_right = 1.0
+	backdrop.anchor_bottom = 1.0
+	add_child(backdrop)
 
-	# Zentrale Dialog-Box
-	var dialog_bg := PanelContainer.new()
-	dialog_bg.anchor_left = 0.5
-	dialog_bg.anchor_top = 0.5
-	dialog_bg.anchor_right = 0.5
-	dialog_bg.anchor_bottom = 0.5
-	dialog_bg.offset_left = -150
-	dialog_bg.offset_top = -100
-	dialog_bg.offset_right = 150
-	dialog_bg.offset_bottom = 100
-	add_child(dialog_bg)
+	var panel := PanelContainer.new()
+	panel.anchor_left = 0.5
+	panel.anchor_top = 0.5
+	panel.anchor_right = 0.5
+	panel.anchor_bottom = 0.5
+	panel.offset_left = -220
+	panel.offset_right = 220
+	panel.offset_top = -110
+	panel.offset_bottom = 110
+	add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 10)
-	dialog_bg.add_child(vbox)
+	margin.add_child(vbox)
 
 	var title := Label.new()
 	title.text = "Neue Welt erstellen"
+	title.add_theme_font_size_override("font_size", 20)
 	vbox.add_child(title)
 
-	var desc := Label.new()
-	desc.text = "Optional: Gib einen Seed ein (Zahl oder Text).\nFür zufälligen Seed: leeres Feld lassen."
-	desc.custom_minimum_size.y = 50
-	vbox.add_child(desc)
+	var info := Label.new()
+	info.text = "Optional: eigenen World-Seed eingeben (Text oder Zahl).\nLeer lassen fuer einen zufaelligen Seed."
+	info.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(info)
 
-	seed_input = LineEdit.new()
-	seed_input.placeholder_text = "Seed (optional)"
-	seed_input.custom_minimum_size.y = 30
-	vbox.add_child(seed_input)
+	_line_edit = LineEdit.new()
+	_line_edit.placeholder_text = "z. B. MeinSeed123"
+	_line_edit.text_submitted.connect(func(_t: String) -> void: _on_confirm_pressed())
+	vbox.add_child(_line_edit)
 
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 10)
-	vbox.add_child(hbox)
+	var button_row := HBoxContainer.new()
+	button_row.add_theme_constant_override("separation", 10)
+	vbox.add_child(button_row)
 
-	var ok_btn := Button.new()
-	ok_btn.text = "OK"
-	hbox.add_child(ok_btn)
+	var random_button := Button.new()
+	random_button.text = "Zufaelliger Seed"
+	random_button.pressed.connect(_on_random_pressed)
+	button_row.add_child(random_button)
 
-	var spacer := Control.new()
-	spacer.custom_minimum_size.x = 20
-	hbox.add_child(spacer)
+	var confirm_button := Button.new()
+	confirm_button.text = "Welt erstellen"
+	confirm_button.pressed.connect(_on_confirm_pressed)
+	button_row.add_child(confirm_button)
 
-	var random_btn := Button.new()
-	random_btn.text = "Zufall"
-	hbox.add_child(random_btn)
-
-	ok_btn.pressed.connect(_on_ok_pressed)
-	random_btn.pressed.connect(_on_random_pressed)
-	seed_input.text_submitted.connect(_on_ok_pressed)
-
-func _on_ok_pressed() -> void:
-	var custom_seed := seed_input.text.strip_edges()
-	GameDatabase.finish_new_world_setup(custom_seed)
-	queue_free()
+	_line_edit.grab_focus()
 
 func _on_random_pressed() -> void:
-	GameDatabase.finish_new_world_setup("")
-	queue_free()
+	seed_confirmed.emit("")
+
+func _on_confirm_pressed() -> void:
+	seed_confirmed.emit(_line_edit.text)

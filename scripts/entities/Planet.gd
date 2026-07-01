@@ -106,7 +106,7 @@ func _paint_rocky_planet(img: Image, noise: FastNoiseLite, base_color: Color) ->
 	var ice := Color(0.9, 0.92, 0.95)
 
 	for y in range(TEX_HEIGHT):
-		var v: float = float(y) / float(TEX_HEIGHT - 1)
+		var v := float(y) / float(TEX_HEIGHT - 1)
 		var lat_norm: float = abs(v - 0.5) * 2.0  # 0 am Aequator, 1 an den Polen
 		for x in range(TEX_WIDTH):
 			var u := float(x) / float(TEX_WIDTH - 1)

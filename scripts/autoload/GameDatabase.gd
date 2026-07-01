@@ -23,6 +23,12 @@ var needs_seed_setup: bool = false
 func _ready() -> void:
 	_ensure_save_dirs()
 	_load_or_create_world_meta()
+	# Hinweis: "user://" ist KEIN Ordner im Godot-Projektverzeichnis, sondern
+	# zeigt auf einen OS-spezifischen Nutzerdaten-Ordner. Diese Zeile gibt den
+	# tatsaechlichen, absoluten Pfad im Godot-Output-Panel aus, damit man die
+	# Speicherdatei im Explorer/Finder wiederfindet. Alternativ im Editor:
+	# Menue "Projekt" -> "Nutzerdaten-Ordner oeffnen" (Godot 4.3).
+	print("GameDatabase: Speicherort = %s" % [ProjectSettings.globalize_path(SAVE_DIR)])
 
 func _ensure_save_dirs() -> void:
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
@@ -43,7 +49,7 @@ func _load_or_create_world_meta() -> void:
 				needs_seed_setup = false
 				return
 		else:
-			push_error("GameDatabase: world_meta.json konnte nicht gelesen werden.")
+			push_error("GameDatabase: world_meta.json konnte nicht gelesen werden (%s)." % [error_string(FileAccess.get_open_error())])
 	# Kein gespeicherter Seed vorhanden -> neue Welt. Die eigentliche
 	# Seed-Erzeugung wird zurueckgestellt, bis der Spieler im
 	# WorldSeedDialog optional einen eigenen Seed eingegeben hat
@@ -109,10 +115,11 @@ func save_world_meta() -> void:
 	}
 	var f := FileAccess.open(META_FILE, FileAccess.WRITE)
 	if f == null:
-		push_error("GameDatabase: world_meta.json konnte nicht geschrieben werden.")
+		push_error("GameDatabase: world_meta.json konnte nicht geschrieben werden (%s)." % [error_string(FileAccess.get_open_error())])
 		return
 	f.store_string(JSON.stringify(data, "  "))
 	f.close()
+	print("GameDatabase: world_meta.json gespeichert (%s)" % [ProjectSettings.globalize_path(META_FILE)])
 
 func save_player_position(pos: Vector3) -> void:
 	player_position = pos

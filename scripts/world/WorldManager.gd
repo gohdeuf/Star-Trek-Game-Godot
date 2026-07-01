@@ -11,6 +11,7 @@ var planet_scene: PackedScene = preload("res://scenes/Planet.tscn")
 var moon_scene: PackedScene = preload("res://scenes/Moon.tscn")
 var station_scene: PackedScene = preload("res://scenes/Station.tscn")
 var npc_ship_scene: PackedScene = preload("res://scenes/NPCShip.tscn")
+const SECTOR_UTILS := preload("res://scripts/autoload/SectorUtils.gd")
 
 var player: Node3D
 var _current_sector_id: String = ""
@@ -22,14 +23,14 @@ func set_player(node: Node3D) -> void:
 func _process(_delta: float) -> void:
 	if player == null:
 		return
-	var coords: Vector3i = SectorUtils.world_to_sector_coords(player.global_position)
-	var sector_id: String = SectorUtils.sector_coords_to_id(coords.x, coords.y, coords.z)
+	var coords := SECTOR_UTILS.world_to_sector_coords(player.global_position)
+	var sector_id := SECTOR_UTILS.sector_coords_to_id(coords.x, coords.y, coords.z)
 	if sector_id != _current_sector_id:
 		_current_sector_id = sector_id
 		_on_sector_changed(sector_id)
 
 func _on_sector_changed(center_sector_id: String) -> void:
-	var needed: Array = SectorUtils.neighbor_sector_ids(center_sector_id)  # Returns Array of sector_id Strings
+	var needed: Array = SECTOR_UTILS.neighbor_sector_ids(center_sector_id)
 	var needed_set := {}
 	for id in needed:
 		needed_set[id] = true
