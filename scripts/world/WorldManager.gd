@@ -8,6 +8,7 @@ extends Node3D
 
 var star_scene: PackedScene = preload("res://scenes/Star.tscn")
 var planet_scene: PackedScene = preload("res://scenes/Planet.tscn")
+var moon_scene: PackedScene = preload("res://scenes/Moon.tscn")
 var station_scene: PackedScene = preload("res://scenes/Station.tscn")
 var npc_ship_scene: PackedScene = preload("res://scenes/NPCShip.tscn")
 
@@ -21,14 +22,14 @@ func set_player(node: Node3D) -> void:
 func _process(_delta: float) -> void:
 	if player == null:
 		return
-	var coords := SectorUtils.world_to_sector_coords(player.global_position)
-	var sector_id := SectorUtils.sector_coords_to_id(coords.x, coords.y, coords.z)
+	var coords: Vector3i = SectorUtils.world_to_sector_coords(player.global_position)
+	var sector_id: String = SectorUtils.sector_coords_to_id(coords.x, coords.y, coords.z)
 	if sector_id != _current_sector_id:
 		_current_sector_id = sector_id
 		_on_sector_changed(sector_id)
 
 func _on_sector_changed(center_sector_id: String) -> void:
-	var needed: Array = SectorUtils.neighbor_sector_ids(center_sector_id)
+	var needed: Array = SectorUtils.neighbor_sector_ids(center_sector_id)  # Returns Array of sector_id Strings
 	var needed_set := {}
 	for id in needed:
 		needed_set[id] = true
@@ -61,6 +62,12 @@ func _load_sector(sector_id: String) -> void:
 		var planet := planet_scene.instantiate()
 		container.add_child(planet)
 		planet.setup(planet_data, star)
+
+		for moon_data in planet_data.get("moons", []):
+			var moon := moon_scene.instantiate()
+			container.add_child(moon)
+			moon.name = String(moon_data["name"]).replace(" ", "_")
+			moon.setup(planet, moon_data["orbit_radius"], moon_data["angular_speed_deg"])
 
 	var sector_save := GameDatabase.load_sector_data(sector_id)
 	for station_data in sector_save.get("stations", []):

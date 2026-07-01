@@ -4,12 +4,25 @@ extends Node
 # Deterministische Sektorgenerierung aus (world_seed, sector_id), siehe
 # Referenz Abschnitt 3. Gleicher Sektor -> immer gleicher Inhalt innerhalb
 # derselben Welt; unterschiedliche Welten (world_seed) -> unterschiedliche Inhalte.
+#
+# Ausnahme: Der Ursprungssektor (0,0,0) enthaelt IMMER das hartcodierte
+# Sol-System mit 9 Planeten (Merkur bis Pluto), unabhaengig vom World-Seed
+# und der 35%-Spawn-Chance (siehe Referenz Abschnitt 2 + 15).
 
 const SYSTEM_SPAWN_CHANCE := 0.35
 const SOI_MIN := 300.0
 const SOI_MAX := 750.0
 const PLANETS_MIN := 0
 const PLANETS_MAX := 5
+
+# Mond-Spawning (siehe Referenz Abschnitt 7): Gasriesen bekommen haeufiger
+# und mehr Monde als feste Planeten.
+const MOON_CHANCE_ROCKY := 0.28
+const MOON_CHANCE_GAS := 0.55
+const MAX_MOONS_ROCKY := 2
+const MAX_MOONS_GAS := 4
+
+const SOL_SECTOR_ID := "Sector_Alpha_0_0_0"
 
 # Cache: sector_id -> generierte Systemdaten (leeres Dictionary = kein System)
 var _cache: Dictionary = {}
@@ -32,15 +45,18 @@ func get_cached_systems() -> Array:
 	return result
 
 func _generate_sector(sector_id: String) -> Dictionary:
-	var sector_seed := SectorUtils.seed_for_sector(GameDatabase.world_seed, sector_id)
+	if sector_id == SOL_SECTOR_ID:
+		return _build_sol_system()
+
+	var sector_seed: int = SectorUtils.seed_for_sector(GameDatabase.world_seed, sector_id)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = sector_seed
 
 	if rng.randf() > SYSTEM_SPAWN_CHANCE:
 		return {}
 
-	var coords := SectorUtils.sector_id_to_coords(sector_id)
-	var origin := Vector3(coords.x, coords.y, coords.z) * SectorUtils.SECTOR_SIZE
+	var coords: Vector3i = SectorUtils.sector_id_to_coords(sector_id)
+	var origin: Vector3 = Vector3(coords.x, coords.y, coords.z) * SectorUtils.SECTOR_SIZE
 	var star_pos := origin + Vector3(
 		rng.randf_range(0.0, SectorUtils.SECTOR_SIZE),
 		rng.randf_range(0.0, SectorUtils.SECTOR_SIZE),
@@ -61,13 +77,15 @@ func _generate_sector(sector_id: String) -> Dictionary:
 		var radius_range: Array = PlanetClassDB.classes[cls]["radius"]
 		var planet_radius := rng.randf_range(radius_range[0], radius_range[1])
 		var roman := _to_roman(i + 1)
+		var planet_name := "%s %s" % [star_name, roman]
 		planets.append({
-			"name": "%s %s" % [star_name, roman],
+			"name": planet_name,
 			"class": cls,
 			"orbit_radius": orbit_radius,
 			"orbit_angle": orbit_angle,
 			"radius": planet_radius,
 			"resources": resources,
+			"moons": _generate_moons(rng, cls, planet_radius, planet_name),
 		})
 		orbit_radius += rng.randf_range(5.0, 15.0)
 
@@ -77,6 +95,106 @@ func _generate_sector(sector_id: String) -> Dictionary:
 		"name": star_name,
 		"position": star_pos,
 		"sphere_of_influence": soi,
+		"planets": planets,
+	}
+
+## Mond-Spawning (siehe Referenz Abschnitt 7): pro Planet wird zufaellig
+## entschieden, ob und wie viele Monde er bekommt.
+func _generate_moons(rng: RandomNumberGenerator, cls: String, planet_radius: float, planet_name: String) -> Array:
+	var is_gas: bool = PlanetClassDB.classes[cls]["type"] == "gas"
+	var chance: float = MOON_CHANCE_GAS if is_gas else MOON_CHANCE_ROCKY
+	var max_moons: int = MAX_MOONS_GAS if is_gas else MAX_MOONS_ROCKY
+
+	var moons: Array = []
+	var orbit_radius := planet_radius + rng.randf_range(4.0, 8.0)
+	for i in range(max_moons):
+		if rng.randf() > chance:
+			continue
+		orbit_radius += rng.randf_range(3.0, 9.0)
+		moons.append({
+			"name": "%s %s" % [planet_name, _moon_letter(moons.size())],
+			"orbit_radius": orbit_radius,
+			"angular_speed_deg": rng.randf_range(10.0, 40.0),
+		})
+	return moons
+
+func _moon_letter(index: int) -> String:
+	var letters := ["a", "b", "c", "d"]
+	return letters[index % letters.size()]
+
+## Hartcodiertes Sol-System bei Weltursprung (0,0,0), siehe Referenz
+## Abschnitt 2 + 15. Existiert in JEDER Welt an derselben Stelle,
+## unabhaengig vom World-Seed und der sonstigen 35%-Spawn-Chance.
+## Planetenklassen sind an die kanonische Star-Trek-Klassifizierung angelehnt
+## (Erde = M, Mars = K, Jupiter = J, ...).
+func _build_sol_system() -> Dictionary:
+	var planet_defs := [
+		{"name": "Merkur", "class": "D", "orbit_radius": 30.0, "moons": []},
+		{"name": "Venus", "class": "H", "orbit_radius": 55.0, "moons": []},
+		{"name": "Erde", "class": "M", "orbit_radius": 80.0, "moons": [
+			{"suffix": "Luna", "speed": 15.0},
+		]},
+		{"name": "Mars", "class": "K", "orbit_radius": 105.0, "moons": [
+			{"suffix": "Phobos", "speed": 35.0},
+			{"suffix": "Deimos", "speed": 20.0},
+		]},
+		{"name": "Jupiter", "class": "J", "orbit_radius": 190.0, "moons": [
+			{"suffix": "Io", "speed": 30.0},
+			{"suffix": "Europa", "speed": 24.0},
+			{"suffix": "Ganymed", "speed": 18.0},
+			{"suffix": "Callisto", "speed": 12.0},
+		]},
+		{"name": "Saturn", "class": "T", "orbit_radius": 280.0, "moons": [
+			{"suffix": "Titan", "speed": 16.0},
+			{"suffix": "Enceladus", "speed": 26.0},
+		]},
+		{"name": "Uranus", "class": "6", "orbit_radius": 360.0, "moons": [
+			{"suffix": "Titania", "speed": 14.0},
+		]},
+		{"name": "Neptun", "class": "7", "orbit_radius": 430.0, "moons": [
+			{"suffix": "Triton", "speed": 13.0},
+		]},
+		{"name": "Pluto", "class": "Y", "orbit_radius": 490.0, "moons": [
+			{"suffix": "Charon", "speed": 10.0},
+		]},
+	]
+
+	var angle_step := 360.0 / planet_defs.size()
+	var planets: Array = []
+	for i in range(planet_defs.size()):
+		var def: Dictionary = planet_defs[i]
+		var cls: String = def["class"]
+		var radius_range: Array = PlanetClassDB.classes[cls]["radius"]
+		var planet_radius: float = (radius_range[0] + radius_range[1]) * 0.5
+		var resource_range: Array = PlanetClassDB.classes[cls]["resources"]
+		var resource_max: float = (resource_range[0] + resource_range[1]) * 0.5
+
+		var moons: Array = []
+		var moon_orbit := planet_radius + 4.0
+		for moon_def in def["moons"]:
+			moon_orbit += 4.0
+			moons.append({
+				"name": "%s %s" % [def["name"], moon_def["suffix"]],
+				"orbit_radius": moon_orbit,
+				"angular_speed_deg": moon_def["speed"],
+			})
+
+		planets.append({
+			"name": def["name"],
+			"class": cls,
+			"orbit_radius": def["orbit_radius"],
+			"orbit_angle": angle_step * i,
+			"radius": planet_radius,
+			"resources": {"max": resource_max, "current": resource_max},
+			"moons": moons,
+		})
+
+	return {
+		"system_id": SOL_SECTOR_ID + "_sys",
+		"sector_id": SOL_SECTOR_ID,
+		"name": "Sol",
+		"position": Vector3.ZERO,
+		"sphere_of_influence": SOI_MAX,
 		"planets": planets,
 	}
 

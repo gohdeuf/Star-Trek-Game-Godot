@@ -10,6 +10,7 @@ var camera_rig: CameraRig
 var world_manager: WorldManager
 var soi_tracker: SOITracker
 var _save_timer: float = 0.0
+var _world_ready: bool = false
 
 func _ready() -> void:
 	_setup_environment()
@@ -38,6 +39,18 @@ func _ready() -> void:
 
 	var help_scene: PackedScene = preload("res://scenes/UI/HelpOverlay.tscn")
 	add_child(help_scene.instantiate())
+
+	# Wenn neue Welt: zeige Dialog vor World-Aktivierung
+	if GameDatabase.needs_seed_setup:
+		world_manager.set_process(false)
+		var dialog_scene: PackedScene = preload("res://scenes/UI/WorldSeedDialog.tscn")
+		add_child(dialog_scene.instantiate())
+		# Warte, bis Seed gesetzt ist (Dialog wird `finish_new_world_setup` aufrufen)
+		while GameDatabase.needs_seed_setup:
+			await get_tree().process_frame
+		world_manager.set_process(true)
+	else:
+		_world_ready = true
 
 func _setup_environment() -> void:
 	# Platzhalter-Weltraum-Sky (ProceduralSkyMaterial), kein externes Asset
