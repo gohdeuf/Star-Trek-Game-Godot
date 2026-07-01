@@ -82,9 +82,6 @@ der `world_meta.json`.
   Datenstruktur vorbereitet (`GameDatabase.add_station/add_ship/
   update_planet_resource`), aber noch nicht mit echtem Gameplay verbunden.
   Deshalb entstehen aktuell auch noch keine `sectors/*.json`-Dateien.
-- **Eigenes Skybox-Panorama:** Code-seitig fertig integriert (siehe oben),
-  es fehlt nur noch die eigentliche Bild-/HDRI-Datei von dir unter
-  `assets/skybox/starfield_panorama.png` (siehe `LIESMICH.txt` dort).
 - **Lokalisierung/Uebersetzung:** Texte sind aktuell direkt im Code
   (z. B. `HelpOverlay._help_text()`). Geplant: spaeter ein
   `Locale`-Autoload, das Texte aus `res://data/locale/<sprache>.json`
