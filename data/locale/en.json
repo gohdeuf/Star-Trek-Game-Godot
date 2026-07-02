@@ -1,0 +1,19 @@
+{
+  "help.title": "CONTROLS",
+  "help.move": "W/A/S/D - Move ship",
+  "help.pitch_yaw": "Arrow keys - Pitch/Yaw",
+  "help.roll": "Q/E - Roll",
+  "help.vertical": "Space/Ctrl - Up/Down",
+  "help.free_cam": "F10 - Toggle free camera",
+  "help.map": "Tab - Galaxy map",
+  "help.quit": "Esc - Quit game (saves position)",
+  "help.language": "F9 - Switch language (current: {lang})",
+
+  "seed_dialog.title": "Create New World",
+  "seed_dialog.info": "Optional: enter your own world seed (text or number).\nLeave empty for a random seed.",
+  "seed_dialog.placeholder": "e.g. MySeed123",
+  "seed_dialog.random_button": "Random Seed",
+  "seed_dialog.confirm_button": "Create World",
+
+  "map.info": "Pos: ({x}, {y}, {z})   Zoom: {zoom}x   Systems: {count}"
+}

@@ -59,9 +59,9 @@ func _generate_sector(sector_id: String) -> Dictionary:
 	var coords := SECTOR_UTILS.sector_id_to_coords(sector_id)
 	var origin := Vector3(coords.x, coords.y, coords.z) * SECTOR_UTILS.SECTOR_SIZE
 	var star_pos := origin + Vector3(
-		rng.randf_range(0.0, SectorUtils.SECTOR_SIZE),
-		rng.randf_range(0.0, SectorUtils.SECTOR_SIZE),
-		rng.randf_range(0.0, SectorUtils.SECTOR_SIZE)
+		rng.randf_range(0.0, SECTOR_UTILS.SECTOR_SIZE),
+		rng.randf_range(0.0, SECTOR_UTILS.SECTOR_SIZE),
+		rng.randf_range(0.0, SECTOR_UTILS.SECTOR_SIZE)
 	)
 
 	var soi := rng.randf_range(SOI_MIN, SOI_MAX)

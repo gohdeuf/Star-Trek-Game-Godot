@@ -5,10 +5,17 @@ extends Control
 # gespeicherte Welt existiert (GameDatabase.needs_seed_setup == true). Der
 # Spieler kann einen eigenen Seed-Text eingeben oder leer lassen fuer einen
 # zufaelligen Seed.
+#
+# Texte kommen aus dem Locale-Autoload; F9 schaltet auch hier schon die
+# Sprache um, damit man selbst diesen allerersten Bildschirm testen kann.
 
 signal seed_confirmed(custom_seed_text: String)
 
 var _line_edit: LineEdit
+var _title_label: Label
+var _info_label: Label
+var _random_button: Button
+var _confirm_button: Button
 
 func _ready() -> void:
 	anchor_right = 1.0
@@ -42,18 +49,15 @@ func _ready() -> void:
 	vbox.add_theme_constant_override("separation", 10)
 	margin.add_child(vbox)
 
-	var title := Label.new()
-	title.text = "Neue Welt erstellen"
-	title.add_theme_font_size_override("font_size", 20)
-	vbox.add_child(title)
+	_title_label = Label.new()
+	_title_label.add_theme_font_size_override("font_size", 20)
+	vbox.add_child(_title_label)
 
-	var info := Label.new()
-	info.text = "Optional: eigenen World-Seed eingeben (Text oder Zahl).\nLeer lassen fuer einen zufaelligen Seed."
-	info.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(info)
+	_info_label = Label.new()
+	_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(_info_label)
 
 	_line_edit = LineEdit.new()
-	_line_edit.placeholder_text = "z. B. MeinSeed123"
 	_line_edit.text_submitted.connect(func(_t: String) -> void: _on_confirm_pressed())
 	vbox.add_child(_line_edit)
 
@@ -61,17 +65,29 @@ func _ready() -> void:
 	button_row.add_theme_constant_override("separation", 10)
 	vbox.add_child(button_row)
 
-	var random_button := Button.new()
-	random_button.text = "Zufaelliger Seed"
-	random_button.pressed.connect(_on_random_pressed)
-	button_row.add_child(random_button)
+	_random_button = Button.new()
+	_random_button.pressed.connect(_on_random_pressed)
+	button_row.add_child(_random_button)
 
-	var confirm_button := Button.new()
-	confirm_button.text = "Welt erstellen"
-	confirm_button.pressed.connect(_on_confirm_pressed)
-	button_row.add_child(confirm_button)
+	_confirm_button = Button.new()
+	_confirm_button.pressed.connect(_on_confirm_pressed)
+	button_row.add_child(_confirm_button)
+
+	_refresh_text()
+	Locale.language_changed.connect(func(_lang: String) -> void: _refresh_text())
 
 	_line_edit.grab_focus()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("cycle_language"):
+		Locale.cycle_language()
+
+func _refresh_text() -> void:
+	_title_label.text = Locale.t("seed_dialog.title")
+	_info_label.text = Locale.t("seed_dialog.info")
+	_line_edit.placeholder_text = Locale.t("seed_dialog.placeholder")
+	_random_button.text = Locale.t("seed_dialog.random_button")
+	_confirm_button.text = Locale.t("seed_dialog.confirm_button")
 
 func _on_random_pressed() -> void:
 	seed_confirmed.emit("")

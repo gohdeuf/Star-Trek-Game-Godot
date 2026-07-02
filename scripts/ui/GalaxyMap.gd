@@ -92,8 +92,11 @@ func _draw() -> void:
 	draw_line(player_map_pos, player_map_pos + forward_2d * 12.0, Color(0.2, 1.0, 0.3), 2.0)
 	draw_circle(player_map_pos, 5.0, Color(0.2, 1.0, 0.3))
 
-	var info := "Pos: (%.0f, %.0f, %.0f)   Zoom: %.1fx   Systeme: %d" % [
-		player.global_position.x, player.global_position.y, player.global_position.z,
-		_zoom, _systems.size(),
-	]
+	var info := Locale.t("map.info", {
+		"x": "%.0f" % player.global_position.x,
+		"y": "%.0f" % player.global_position.y,
+		"z": "%.0f" % player.global_position.z,
+		"zoom": "%.1f" % _zoom,
+		"count": _systems.size(),
+	})
 	draw_string(ThemeDB.fallback_font, Vector2(10, size.y - 10), info)

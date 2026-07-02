@@ -1,0 +1,19 @@
+{
+  "help.title": "STEUERUNG",
+  "help.move": "W/A/S/D - Schiff bewegen",
+  "help.pitch_yaw": "Pfeiltasten - Pitch/Yaw",
+  "help.roll": "Q/E - Roll",
+  "help.vertical": "Leertaste/Strg - Hoch/Runter",
+  "help.free_cam": "F10 - Freie Kamera umschalten",
+  "help.map": "Tab - Galaxiekarte",
+  "help.quit": "Esc - Spiel beenden (speichert Position)",
+  "help.language": "F9 - Sprache wechseln (aktuell: {lang})",
+
+  "seed_dialog.title": "Neue Welt erstellen",
+  "seed_dialog.info": "Optional: eigenen World-Seed eingeben (Text oder Zahl).\nLeer lassen fuer einen zufaelligen Seed.",
+  "seed_dialog.placeholder": "z. B. MeinSeed123",
+  "seed_dialog.random_button": "Zufaelliger Seed",
+  "seed_dialog.confirm_button": "Welt erstellen",
+
+  "map.info": "Pos: ({x}, {y}, {z})   Zoom: {zoom}x   Systeme: {count}"
+}

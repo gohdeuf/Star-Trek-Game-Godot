@@ -55,6 +55,19 @@ der `world_meta.json`.
   `res://assets/skybox/starfield_panorama.png`, falls vorhanden (siehe
   `assets/skybox/LIESMICH.txt` fuer die Godot-Import-Falle). Ohne Asset wird
   ein prozedurales, World-Seed-basiertes Sternenfeld generiert.
+- **Lokalisierung:** `Locale`-Autoload laedt Texte aus
+  `res://data/locale/<sprache>.json` (Key -> uebersetzter Text). Neue
+  Sprachen: einfach eine weitere JSON-Datei nach diesem Schema anlegen, KEINE
+  Code-Aenderung noetig. Beim Start wird automatisch versucht, die OS-Sprache
+  zu verwenden (`OS.get_locale_language()`); Fallback ist Deutsch (`de.json`).
+  **Shift + L** schaltet zur Laufzeit zwischen allen gefundenen Sprachen durch (fuer
+  schnelles Testen neuer Uebersetzungen, aendert nichts dauerhaft/persistent).
+  Fehlt ein Key in der gewaehlten Sprache, wird zuerst auf Deutsch, dann auf
+  den rohen Key selbst zurueckgefallen (fehlende Uebersetzungen fallen so
+  sofort im Spiel auf statt leer zu bleiben). Aktuell befuellt: `de.json`
+  (Basis) und `en.json` (Beispiel/Vorlage fuer weitere Sprachen).
+  Planeten-/Sternnamen bleiben bewusst NICHT lokalisiert -- das sind
+  prozedural generierte Weltdaten aus dem SectorGenerator, keine UI-Texte.
 - **Chunk-Loading:** `WorldManager` laedt/entlaedt den 3x3x3-Nachbarschaftsblock
   je nach Spielerposition, spawnt Sterne/Planeten/Monde/Stationen/NPC-Schiffe.
 - **Sphere-of-Influence-Tracking:** `SOITracker` mit Zustandsmaschine
@@ -82,11 +95,12 @@ der `world_meta.json`.
   Datenstruktur vorbereitet (`GameDatabase.add_station/add_ship/
   update_planet_resource`), aber noch nicht mit echtem Gameplay verbunden.
   Deshalb entstehen aktuell auch noch keine `sectors/*.json`-Dateien.
-- **Lokalisierung/Uebersetzung:** Texte sind aktuell direkt im Code
-  (z. B. `HelpOverlay._help_text()`). Geplant: spaeter ein
-  `Locale`-Autoload, das Texte aus `res://data/locale/<sprache>.json`
-  (Key -> uebersetzter Text) laedt, sodass neue Sprachen ohne Code-Aenderung
-  ergaenzt werden koennen.
+- **Weitere Sprachen:** Infrastruktur steht (siehe oben). Um z. B.
+  Franzoesisch zu ergaenzen: `data/locale/de.json` kopieren nach
+  `data/locale/fr.json`, alle Werte uebersetzen (Keys unveraendert lassen),
+  fertig -- kein Code-Aenderung noetig. Neue Keys fuer zukuenftige Features
+  bitte in ALLEN vorhandenen `data/locale/*.json`-Dateien ergaenzen, sonst
+  greift automatisch der Deutsch-Fallback.
 
 ## Projektstruktur
 
@@ -94,8 +108,10 @@ der `world_meta.json`.
 project.godot
 assets/
   skybox/           Ablageort fuer eigenes Skybox-Panorama (siehe LIESMICH.txt)
+data/
+  locale/           de.json, en.json, ... (siehe Locale-Autoload)
 scripts/
-  autoload/         GameDatabase, SectorUtils, StarNames, PlanetClassDB,
+  autoload/         Locale, GameDatabase, SectorUtils, StarNames, PlanetClassDB,
                      SectorGenerator, InputSetup (alle als Singleton registriert)
   world/            WorldManager (Chunk-Loading), SOITracker
   entities/         Ship, Star, Planet, Moon, Station, NPCShip

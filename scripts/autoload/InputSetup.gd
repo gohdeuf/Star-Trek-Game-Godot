@@ -22,6 +22,16 @@ func _ready() -> void:
 	_add_key_action("toggle_map", KEY_TAB)
 	_add_key_action("quit_game", KEY_ESCAPE)
 	_add_key_action("boost", KEY_SHIFT)
+	_add_key_action_shift("cycle_language", KEY_L)
+
+func _add_key_action_shift(action_name: String, keycode: Key) -> void:
+	if InputMap.has_action(action_name):
+		return
+	InputMap.add_action(action_name)
+	var ev := InputEventKey.new()
+	ev.physical_keycode = keycode
+	ev.shift_pressed = true
+	InputMap.action_add_event(action_name, ev)
 
 func _add_key_action(action_name: String, keycode: Key) -> void:
 	if InputMap.has_action(action_name):

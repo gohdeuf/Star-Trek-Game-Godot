@@ -21,6 +21,7 @@ config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 
+Locale="*res://scripts/autoload/Locale.gd"
 GameDatabase="*res://scripts/autoload/GameDatabase.gd"
 SectorUtils="*res://scripts/autoload/SectorUtils.gd"
 StarNames="*res://scripts/autoload/StarNames.gd"
