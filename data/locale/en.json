@@ -15,5 +15,18 @@
   "seed_dialog.random_button": "Random Seed",
   "seed_dialog.confirm_button": "Create World",
 
-  "map.info": "Pos: ({x}, {y}, {z})   Zoom: {zoom}x   Systems: {count}"
+  "map.info": "Pos: ({x}, {y}, {z})   Zoom: {zoom}x   Systems: {count}",
+
+  "soi.entering": "Entering system {system}",
+  "soi.leaving":  "Leaving system: {system}",
+
+  "touch.up": "Up",
+  "touch.down": "Down",
+  "touch.roll_left": "Roll left",
+  "touch.roll_right": "Roll right",
+  "touch.boost": "Boost",
+  "touch.mine": "Mine",
+  "touch.build": "Build",
+  "touch.map": "Map",
+  "touch.free_cam": "Free camera"
 }

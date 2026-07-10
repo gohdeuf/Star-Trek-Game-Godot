@@ -78,12 +78,45 @@ der `world_meta.json`.
   (RMB+Maus = Drehen, WASD/Space/Strg = Fliegen, Shift = Boost, Scroll = Speed).
 - **Galaxiekarte:** Tab oeffnet/schliesst, Zoom/Pan, Hoehenanzeige (^/v/~),
   Spieler-Marker mit Rotation, Info-Text.
+- **Touch-Steuerung (automatisch, siehe unten):** Auf mobilen Geraeten/mit
+  Touchscreen erscheint automatisch eine virtuelle Steuerung (zwei Joysticks +
+  Buttons) -- keine manuelle Einstellung noetig.
 - **Persistenz:** Spielerposition + World-Seed in
   `user://savegame/world_meta.json`; vom Spieler veraenderte Sektordaten
   (Stationen/Schiffe/Ressourcen-Overrides) in `user://savegame/sectors/*.json`
   (diese Dateien entstehen erst, sobald Bau-/Abbau-Gameplay existiert, siehe
   unten -- aktuell ruft noch niemand `add_station`/`add_ship`/
   `update_planet_resource` auf).
+
+## Touch-Steuerung (mobil)
+
+`TouchControls` (`scripts/ui/TouchControls.gd`) erkennt beim Start
+selbststaendig, ob ein Touchscreen bzw. eine mobile Plattform vorliegt
+(`OS.has_feature("mobile")` oder `DisplayServer.is_touchscreen_available()`).
+Ist das der Fall, fuegt `Main.gd` automatisch die Touch-Oberflaeche hinzu --
+es ist **keine Einstellung noetig**, die Steuerung "setzt sich selbst".
+
+Aufbau:
+- **Linker virtueller Joystick:** Bewegung (entspricht W/A/S/D).
+- **Rechter virtueller Joystick:** Pitch/Yaw (entspricht den Pfeiltasten).
+- **Buttons links:** Rollen links/rechts (Q/E), Hoch/Runter (Leertaste/Strg).
+- **Buttons rechts:** Boost (Shift, halten), Abbauen (M, halten), Bauen
+  (B, kurzer Tipp).
+- **Oben rechts:** Karte (Tab), Freie Kamera (F10).
+
+Technisch simulieren die Joysticks/Buttons exakt dieselben physischen Tasten,
+die `InputSetup.gd` bereits registriert (`Input.parse_input_event` mit
+`physical_keycode`). Dadurch mussten `Ship.gd`, `CameraRig.gd` und die
+Bau-/Abbau-Logik NICHT angepasst werden -- fuer das restliche Spiel sieht ein
+Touch-Tap exakt wie ein Tastendruck aus.
+
+Zum Testen im Editor auf dem Desktop (ohne echten Touchscreen) kann in
+`scripts/ui/TouchControls.gd` die Konstante `DEBUG_FORCE_SHOW` auf `true`
+gesetzt werden.
+
+**Bekannte Einschraenkung:** Die freie Kamera (F10) wird per Touch nur
+umgeschaltet; das Drehen der freien Kamera per Drag ist bisher nicht an
+Touch angebunden (dafuer nutzt `CameraRig.gd` aktuell Rechtsklick+Maus-Delta).
 
 ## Bewusste Vereinfachungen / naechste Schritte
 
@@ -101,6 +134,8 @@ der `world_meta.json`.
   fertig -- kein Code-Aenderung noetig. Neue Keys fuer zukuenftige Features
   bitte in ALLEN vorhandenen `data/locale/*.json`-Dateien ergaenzen, sonst
   greift automatisch der Deutsch-Fallback.
+- **Touch-Kamera-Drag** fuer den freien Kameramodus ist noch nicht
+  implementiert (siehe oben).
 
 ## Projektstruktur
 
@@ -116,7 +151,8 @@ scripts/
   world/            WorldManager (Chunk-Loading), SOITracker
   entities/         Ship, Star, Planet, Moon, Station, NPCShip
   camera/           CameraRig (Follow/Frei)
-  ui/               GalaxyMap, HelpOverlay, WorldSeedDialog
+  ui/               GalaxyMap, HelpOverlay, WorldSeedDialog, TouchControls,
+                     TouchJoystick
   main/             Main (verdrahtet alles)
 scenes/             Minimal-Szenen (Root-Node + zugehoeriges Skript)
 ```

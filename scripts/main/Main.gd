@@ -57,6 +57,22 @@ func _start_game() -> void:
 	add_child(soi_tracker)
 	soi_tracker.set_player(ship)
 
+	# SOI-Benachrichtigung verbinden (Eintritt / Austritt Systemsphaere)
+	var soi_notification := SOINotification.new()
+	add_child(soi_notification)
+	soi_tracker.enter_system.connect(
+		func(sys: Dictionary) -> void:
+			soi_notification.show_message(
+				Locale.t("soi.entering", {"system": sys.get("name", "?")})
+			)
+	)
+	soi_tracker.exit_system.connect(
+		func(sys: Dictionary) -> void:
+			soi_notification.show_message(
+				Locale.t("soi.leaving", {"system": sys.get("name", "?")})
+			)
+	)
+
 	var map_scene: PackedScene = preload("res://scenes/UI/GalaxyMap.tscn")
 	var map: GalaxyMap = map_scene.instantiate()
 	add_child(map)
@@ -64,6 +80,14 @@ func _start_game() -> void:
 
 	var help_scene: PackedScene = preload("res://scenes/UI/HelpOverlay.tscn")
 	add_child(help_scene.instantiate())
+
+	# Touch-Steuerung: nur auf mobilen Plattformen / Touchscreens einblenden.
+	# TouchControls.should_show() prueft OS.has_feature("mobile") sowie
+	# DisplayServer.is_touchscreen_available(); fuer Desktop-Tests kann
+	# DEBUG_FORCE_SHOW in TouchControls.gd auf true gesetzt werden.
+	if TouchControls.should_show():
+		var touch_scene: PackedScene = preload("res://scenes/UI/TouchControls.tscn")
+		add_child(touch_scene.instantiate())
 
 func _setup_environment() -> void:
 	# Skybox (siehe Referenz Abschnitt 9): nutzt ein Panorama-Asset aus
@@ -85,7 +109,15 @@ func _setup_environment() -> void:
 	sky.sky_material = pano_mat
 
 	environment.sky = sky
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+
+	# Ambient-Licht: feste Farbe statt Sky-Quelle, da der prozedurale
+	# Sternenhimmel nahezu schwarz ist und Sky-basiertes Ambient das Schiff
+	# dadurch kaum beleuchtet. Leicht blaeulisches Weltraum-Ambient sorgt fuer
+	# gute Erkennbarkeit ohne die Nacht-Atmosphaere zu zerstoeren.
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color  = Color(0.15, 0.16, 0.25)
+	environment.ambient_light_energy = 0.6
+
 	env.environment = environment
 	add_child(env)
 
