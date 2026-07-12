@@ -1,7 +1,5 @@
 [gd_scene load_steps=2 format=3]
-
 [ext_resource type="Script" path="res://scripts/ui/HelpOverlay.gd" id="1_helpoverlay"]
-
 [node name="HelpOverlay" type="Control"]
 mouse_filter = 2
 script = ExtResource("1_helpoverlay")

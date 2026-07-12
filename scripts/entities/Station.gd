@@ -1,6 +1,5 @@
 class_name Station
 extends Node3D
-# Spielerstation/Outpost: blauer Wuerfel (siehe Referenz Abschnitt 5).
 
 func _ready() -> void:
 	var mesh_instance := MeshInstance3D.new()

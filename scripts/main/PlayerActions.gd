@@ -1,22 +1,17 @@
 class_name PlayerActions
 extends Node
-# Einfache Basis-Version fuer Bau-/Abbau-Gameplay (siehe README "Bewusste
-# Vereinfachungen"). Zwei Aktionen:
+# Bau-/Abbau-Gameplay (siehe Referenz Abschnitt 6 / README).
 #
-#   - "build_station" (Taste B): platziert sofort eine Station an der
-#     aktuellen Schiffsposition im aktuellen Sektor und persistiert sie
-#     ueber GameDatabase.add_station().
+#   - "build_station" (Taste B): platziert eine Station an der aktuellen
+#     Schiffsposition im aktuellen Sektor und persistiert sie via
+#     GameDatabase.add_station().
 #   - "mine_resource" (Taste M, gehalten): baut kontinuierlich Ressourcen
-#     vom naechstgelegenen Planeten in Reichweite ab (siehe MINING_RANGE/
-#     MINING_RATE) und persistiert den Fortschritt periodisch ueber
+#     vom naechstgelegenen Planeten in Reichweite ab (MINING_RANGE /
+#     MINING_RATE) und persistiert den Fortschritt periodisch via
 #     GameDatabase.update_planet_resource().
-#
-# Bewusst simpel gehalten (auf Wunsch als erste Basis-Version): kein
-# Baukosten-/Inventarsystem, keine Abbauwerkzeuge/-level, keine Kollisions-
-# pruefung beim Bauen. Naechster moeglicher Ausbauschritt.
 
-const MINING_RANGE := 20.0   # zusaetzlich zum Planetenradius
-const MINING_RATE := 80.0    # Ressourceneinheiten pro Sekunde
+const MINING_RANGE    := 20.0    # zusaetzlich zum Planetenradius
+const MINING_RATE     := 80.0    # Ressourceneinheiten pro Sekunde
 const PERSIST_INTERVAL := 1.0
 
 var ship: Node3D
@@ -28,9 +23,9 @@ var _mining_planet: Planet = null
 var _persist_timer: float = 0.0
 
 func setup(p_ship: Node3D, p_world_manager: WorldManager, p_hud: SOINotification) -> void:
-	ship = p_ship
+	ship          = p_ship
 	world_manager = p_world_manager
-	hud = p_hud
+	hud           = p_hud
 
 func _process(delta: float) -> void:
 	if ship == null:
@@ -44,7 +39,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Bauen ---
 
 func _build_station() -> void:
-	var coords := SectorUtils.world_to_sector_coords(ship.global_position)
+	var coords    := SectorUtils.world_to_sector_coords(ship.global_position)
 	var sector_id := SectorUtils.sector_coords_to_id(coords.x, coords.y, coords.z)
 
 	var station := station_scene.instantiate()
@@ -52,8 +47,6 @@ func _build_station() -> void:
 	if container != null:
 		container.add_child(station)
 	else:
-		# Sollte praktisch nicht vorkommen (Schiff steht ja im aktuell
-		# geladenen Sektor), aber sicherheitshalber ein Fallback.
 		add_child(station)
 	station.global_position = ship.global_position
 
@@ -105,9 +98,13 @@ func _handle_mining(delta: float) -> void:
 		_persist_mining(_mining_planet)
 
 func _persist_mining(planet: Planet) -> void:
-	var coords := SectorUtils.world_to_sector_coords(planet.global_position)
+	var coords    := SectorUtils.world_to_sector_coords(planet.global_position)
 	var sector_id := SectorUtils.sector_coords_to_id(coords.x, coords.y, coords.z)
-	GameDatabase.update_planet_resource(sector_id, planet.planet_data["name"], planet.planet_data["resources"]["current"])
+	GameDatabase.update_planet_resource(
+		sector_id,
+		planet.planet_data["name"],
+		planet.planet_data["resources"]["current"]
+	)
 
 func _find_nearby_planet() -> Planet:
 	var best: Planet = null

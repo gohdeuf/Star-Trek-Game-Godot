@@ -6,9 +6,9 @@ extends Node3D
 # Sektorwechsel den 3x3x3-Nachbarschaftsblock neu und entlaedt Sektoren,
 # die nicht mehr im Block liegen.
 
-var star_scene: PackedScene = preload("res://scenes/Star.tscn")
-var planet_scene: PackedScene = preload("res://scenes/Planet.tscn")
-var moon_scene: PackedScene = preload("res://scenes/Moon.tscn")
+var star_scene:    PackedScene = preload("res://scenes/Star.tscn")
+var planet_scene:  PackedScene = preload("res://scenes/Planet.tscn")
+var moon_scene:    PackedScene = preload("res://scenes/Moon.tscn")
 var station_scene: PackedScene = preload("res://scenes/Station.tscn")
 var npc_ship_scene: PackedScene = preload("res://scenes/NPCShip.tscn")
 const SECTOR_UTILS := preload("res://scripts/autoload/SectorUtils.gd")
@@ -19,6 +19,12 @@ var _loaded_sectors: Dictionary = {}  # sector_id -> Node3D (Container)
 
 func set_player(node: Node3D) -> void:
 	player = node
+
+## Gibt den Szenen-Container eines geladenen Sektors zurueck (oder null).
+## Wird von PlayerActions genutzt, um gebaute Stationen in den richtigen
+## Container einzuhaengen.
+func get_sector_container(sector_id: String) -> Node3D:
+	return _loaded_sectors.get(sector_id, null)
 
 func _process(_delta: float) -> void:
 	if player == null:
@@ -85,8 +91,5 @@ func _unload_sector(sector_id: String) -> void:
 	var container: Node3D = _loaded_sectors.get(sector_id)
 	if container == null:
 		return
-	# TODO (folgender Ausbauschritt): Ressourcenstaende abgebauter Planeten
-	# sowie vom Spieler gebaute Stationen/Schiffe ueber GameDatabase.update_planet_resource()
-	# bzw. add_station()/add_ship() zurueckschreiben, sobald Bau-/Abbau-Gameplay existiert.
 	container.queue_free()
 	_loaded_sectors.erase(sector_id)

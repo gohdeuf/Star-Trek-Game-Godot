@@ -1,37 +1,21 @@
 extends Node
 # Autoload: Locale
-#
-# Lokalisierungssystem (siehe README "Lokalisierung/Uebersetzung", bewusst
-# als letztes Feature umgesetzt, nachdem alle Gameplay-Systeme stehen).
-# Laedt Text-Keys aus JSON-Dateien unter res://data/locale/<sprache>.json.
-# Neue Sprachen lassen sich rein durch Hinzufuegen einer weiteren JSON-Datei
-# ergaenzen -> KEINE Code-Aenderung noetig.
-#
-# Nutzung im Code:
-#   Locale.t("help.title")
-#   Locale.t("map.info", {"x": "10", "y": "0", "z": "5", "zoom": "1.0", "count": 3})
-#
-# Platzhalter in den JSON-Texten werden im Format {key} geschrieben und per
-# String.format() ersetzt (siehe t()).
 
-const LOCALE_DIR := "res://data/locale/"
+const LOCALE_DIR       := "res://data/locale/"
 const DEFAULT_LANGUAGE := "de"
-const FALLBACK_LANGUAGE := "de"  # falls ein Key in der gewaehlten Sprache fehlt
+const FALLBACK_LANGUAGE := "de"
 
 signal language_changed(language_code: String)
 
-var current_language: String = DEFAULT_LANGUAGE
-var available_languages: Array = []
+var current_language:     String = DEFAULT_LANGUAGE
+var available_languages:  Array  = []
 
-var _strings: Dictionary = {}          # aktuell geladene Sprache
-var _fallback_strings: Dictionary = {} # Fallback-Sprache (siehe oben)
+var _strings:          Dictionary = {}
+var _fallback_strings: Dictionary = {}
 
 func _ready() -> void:
 	_scan_available_languages()
 	_fallback_strings = _load_language_file(FALLBACK_LANGUAGE)
-
-	# Beim allerersten Start automatisch die OS-Sprache versuchen, falls dafuer
-	# eine JSON-Datei existiert; sonst Standard-Sprache (Deutsch).
 	var detected := OS.get_locale_language()
 	if available_languages.has(detected):
 		set_language(detected)
@@ -55,14 +39,12 @@ func _scan_available_languages() -> void:
 
 func set_language(language_code: String) -> void:
 	if not available_languages.has(language_code):
-		push_error("Locale: Sprache '%s' nicht gefunden (verfuegbar: %s)." % [language_code, available_languages])
+		push_error("Locale: Sprache '%s' nicht gefunden." % [language_code])
 		return
 	current_language = language_code
 	_strings = _load_language_file(language_code)
 	language_changed.emit(language_code)
 
-## Schaltet zyklisch zur naechsten verfuegbaren Sprache um (siehe F9-Bindung
-## in InputSetup.gd) -- praktisch zum Live-Testen neuer Uebersetzungen.
 func cycle_language() -> void:
 	if available_languages.is_empty():
 		return
@@ -82,10 +64,6 @@ func _load_language_file(language_code: String) -> Dictionary:
 	f.close()
 	return data if data is Dictionary else {}
 
-## Liefert den uebersetzten Text fuer 'key'. Fallback-Kette: aktuelle Sprache
-## -> Fallback-Sprache (Deutsch) -> der Key selbst (damit fehlende
-## Uebersetzungen im Spiel sofort auffallen statt leer/kaputt zu wirken).
-## 'args' (optional) wird per String.format() eingesetzt, siehe Kopfkommentar.
 func t(key: String, args = null) -> String:
 	var raw: String = _strings.get(key, _fallback_strings.get(key, key))
 	if args != null:

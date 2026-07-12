@@ -17,7 +17,7 @@ var planet_data: Dictionary = {}
 var star_node: Node3D
 const ROTATION_SPEED_DEG := 10.0  # Y-Achsen-Eigenrotation, 10 Grad/s
 
-const TEX_WIDTH := 160
+const TEX_WIDTH  := 160
 const TEX_HEIGHT := 80
 
 # Cache ueber alle Planet-Instanzen hinweg, da Sektoren beim Chunk-Loading
@@ -29,6 +29,10 @@ func setup(data: Dictionary, star: Node3D) -> void:
 	planet_data = data
 	star_node = star
 
+	# In die Gruppe "planets" eintragen, damit PlayerActions._find_nearby_planet()
+	# per get_tree().get_nodes_in_group("planets") alle aktiven Planeten findet.
+	add_to_group("planets")
+
 	var cls: String = data["class"]
 	var cls_data: Dictionary = PlanetClassDB.classes[cls]
 	var planet_radius: float = data["radius"]
@@ -36,10 +40,10 @@ func setup(data: Dictionary, star: Node3D) -> void:
 	var mesh_instance := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
 	sphere.radius = planet_radius
-	sphere.height = planet_radius * 2.0
+	sphere.height  = planet_radius * 2.0
 	mesh_instance.mesh = sphere
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color.WHITE
+	mat.albedo_color   = Color.WHITE
 	mat.albedo_texture = _get_planet_texture(cls, cls_data, String(data["name"]))
 	mesh_instance.material_override = mat
 	add_child(mesh_instance)
@@ -86,32 +90,27 @@ func _get_planet_texture(_cls: String, cls_data: Dictionary, planet_name: String
 	return tex
 
 func _texture_seed(planet_name: String) -> int:
-	# World-Seed + Planetenname kombiniert (siehe Referenz Abschnitt 8,
-	# optionaler Hinweis), damit z. B. "Erde" in Welt A anders aussieht als
-	# "Erde" in Welt B.
 	var combined := str(GameDatabase.world_seed) + "|" + planet_name
 	return combined.hash()
 
-## Wandelt UV-Koordinaten in einen Punkt auf der Einheitskugel um. Noise wird
-## darauf als 3D-Noise gesampelt -> dadurch automatisch nahtlos an der
-## 0/360-Grad-Naht (horizontal kachelbar, siehe Referenz Abschnitt 8).
+## Wandelt UV-Koordinaten in einen Punkt auf der Einheitskugel um.
 func _sphere_point(u: float, v: float) -> Vector3:
 	var lon := u * TAU
 	var lat := (v - 0.5) * PI
 	return Vector3(cos(lat) * cos(lon), sin(lat), cos(lat) * sin(lon))
 
 func _paint_rocky_planet(img: Image, noise: FastNoiseLite, base_color: Color) -> void:
-	var dark := base_color.darkened(0.35)
+	var dark  := base_color.darkened(0.35)
 	var light := base_color.lightened(0.25)
-	var ice := Color(0.9, 0.92, 0.95)
+	var ice   := Color(0.9, 0.92, 0.95)
 
 	for y in range(TEX_HEIGHT):
 		var v := float(y) / float(TEX_HEIGHT - 1)
-		var lat_norm: float = abs(v - 0.5) * 2.0  # 0 am Aequator, 1 an den Polen
+		var lat_norm: float = abs(v - 0.5) * 2.0
 		for x in range(TEX_WIDTH):
 			var u := float(x) / float(TEX_WIDTH - 1)
 			var p := _sphere_point(u, v)
-			var n := noise.get_noise_3d(p.x, p.y, p.z)  # -1..1
+			var n := noise.get_noise_3d(p.x, p.y, p.z)
 			var t := (n + 1.0) * 0.5
 			var col: Color
 			if t < 0.5:

@@ -1,7 +1,5 @@
 class_name SOITracker
 extends Node
-# Sphere-of-Influence-Tracking (siehe Referenz Abschnitt 4).
-# Zustandsmaschine INTERSTELLAR <-> SYSTEM mit Enter/Exit-Signalen.
 
 signal enter_system(system_data: Dictionary)
 signal exit_system(system_data: Dictionary)
@@ -32,8 +30,6 @@ func _process(_delta: float) -> void:
 			state = FlightState.SYSTEM
 			enter_system.emit(active_system)
 
-## Prueft, ob das Schiff innerhalb der SOI eines geladenen Systems ist;
-## bei Ueberlappung wird das naechstgelegene System gewaehlt.
 func find_active_system(ship_pos: Vector3) -> Dictionary:
 	var best: Dictionary = {}
 	var best_dist := INF

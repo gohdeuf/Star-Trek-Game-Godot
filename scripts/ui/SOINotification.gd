@@ -1,14 +1,8 @@
 class_name SOINotification
 extends Control
-# HUD-Benachrichtigung beim Eintritt / Austritt einer Systemsphaere (SOI).
-# Wird von Main.gd mit enter_system / exit_system des SOITrackers verbunden.
-# Erscheint kurz oben in der Bildschirmmitte und blendet dann sanft aus.
-#
-# Nutzung:
-#   soi_tracker.enter_system.connect(func(sys): soi_notification.show_message(...))
 
-const DISPLAY_TIME := 3.5   # Sekunden sichtbar, bevor das Ausblenden beginnt
-const FADE_TIME    := 0.9   # Sekunden fuer den Ausblend-Uebergang
+const DISPLAY_TIME := 3.5
+const FADE_TIME    := 0.9
 
 var _label: Label
 var _timer: float = 0.0
@@ -33,11 +27,10 @@ func _ready() -> void:
 	_label.add_theme_constant_override("shadow_offset_x", 2)
 	_label.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(_label)
-
 	visible = false
 
 func show_message(text: String) -> void:
-	_label.text = text
+	_label.text    = text
 	_label.modulate.a = 1.0
 	visible = true
 	_timer  = 0.0

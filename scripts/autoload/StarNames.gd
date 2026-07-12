@@ -1,6 +1,5 @@
 extends Node
 # Autoload: StarNames
-# Praefix/Suffix-Listen fuer Sternnamen (siehe Referenz Abschnitt 3.1).
 
 const PREFIXES := [
 	"Vulcan", "Andor", "Risa", "Bajor", "Cardassia", "Romulus",

@@ -1,6 +1,5 @@
 class_name NPCShip
 extends Node3D
-# NPC-Schiff: oranger Wuerfel (siehe Referenz Abschnitt 5).
 
 func _ready() -> void:
 	var mesh_instance := MeshInstance3D.new()

@@ -1,7 +1,8 @@
 class_name Main
 extends Node3D
 # Hauptszene: setzt Umgebung, Schiff, Kamera, WorldManager, SOITracker,
-# Galaxiekarte und Hilfe-Overlay zusammen (siehe Referenz Abschnitte 5, 9-13).
+# Galaxiekarte, Hilfe-Overlay und PlayerActions zusammen
+# (siehe Referenz Abschnitte 5, 9-13).
 #
 # Bei einer brandneuen Welt (noch kein Save vorhanden) wird zuerst der
 # WorldSeedDialog gezeigt, damit der Spieler optional einen eigenen
@@ -10,11 +11,6 @@ extends Node3D
 
 const SAVE_INTERVAL := 2.0
 
-# Skybox-Asset-Pfad (siehe Referenz Abschnitt 9). Lege hier eine eigene
-# Equirectangular-Panorama-Textur ab (2:1 Seitenverhaeltnis), um die
-# prozedural generierte Platzhalter-Skybox zu ersetzen. WICHTIG: die Datei
-# muss dafuer im GEOEFFNETEN Godot-Editor liegen/importiert worden sein
-# (siehe assets/skybox/LIESMICH.txt), sonst findet load() sie nicht.
 const SKYBOX_ASSET_PATH := "res://assets/skybox/starfield_panorama.png"
 
 var ship: Node3D
@@ -57,7 +53,7 @@ func _start_game() -> void:
 	add_child(soi_tracker)
 	soi_tracker.set_player(ship)
 
-	# SOI-Benachrichtigung verbinden (Eintritt / Austritt Systemsphaere)
+	# SOI-Benachrichtigung (wird auch an PlayerActions weitergereicht)
 	var soi_notification := SOINotification.new()
 	add_child(soi_notification)
 	soi_tracker.enter_system.connect(
@@ -73,6 +69,11 @@ func _start_game() -> void:
 			)
 	)
 
+	# Bau- / Abbau-Gameplay (Taste B = Station bauen, M gehalten = Abbauen)
+	var player_actions := PlayerActions.new()
+	add_child(player_actions)
+	player_actions.setup(ship, world_manager, soi_notification)
+
 	var map_scene: PackedScene = preload("res://scenes/UI/GalaxyMap.tscn")
 	var map: GalaxyMap = map_scene.instantiate()
 	add_child(map)
@@ -81,19 +82,11 @@ func _start_game() -> void:
 	var help_scene: PackedScene = preload("res://scenes/UI/HelpOverlay.tscn")
 	add_child(help_scene.instantiate())
 
-	# Touch-Steuerung: nur auf mobilen Plattformen / Touchscreens einblenden.
-	# TouchControls.should_show() prueft OS.has_feature("mobile") sowie
-	# DisplayServer.is_touchscreen_available(); fuer Desktop-Tests kann
-	# DEBUG_FORCE_SHOW in TouchControls.gd auf true gesetzt werden.
 	if TouchControls.should_show():
 		var touch_scene: PackedScene = preload("res://scenes/UI/TouchControls.tscn")
 		add_child(touch_scene.instantiate())
 
 func _setup_environment() -> void:
-	# Skybox (siehe Referenz Abschnitt 9): nutzt ein Panorama-Asset aus
-	# res://assets/skybox/, falls vorhanden UND vom Editor importiert.
-	# Andernfalls wird ein prozedurales, World-Seed-basiertes Sternenfeld
-	# generiert (statt des alten einfarbigen ProceduralSkyMaterial-Platzhalters).
 	var env := WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
@@ -105,15 +98,10 @@ func _setup_environment() -> void:
 		print("Main: Skybox-Asset geladen (%s)" % [SKYBOX_ASSET_PATH])
 	else:
 		pano_mat.panorama = _build_procedural_starfield()
-		print("Main: Kein Skybox-Asset unter %s gefunden -> generiere prozedurales Sternenfeld." % [SKYBOX_ASSET_PATH])
+		print("Main: Kein Skybox-Asset -> generiere prozedurales Sternenfeld.")
 	sky.sky_material = pano_mat
 
 	environment.sky = sky
-
-	# Ambient-Licht: feste Farbe statt Sky-Quelle, da der prozedurale
-	# Sternenhimmel nahezu schwarz ist und Sky-basiertes Ambient das Schiff
-	# dadurch kaum beleuchtet. Leicht blaeulisches Weltraum-Ambient sorgt fuer
-	# gute Erkennbarkeit ohne die Nacht-Atmosphaere zu zerstoeren.
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color  = Color(0.15, 0.16, 0.25)
 	environment.ambient_light_energy = 0.6
@@ -121,11 +109,8 @@ func _setup_environment() -> void:
 	env.environment = environment
 	add_child(env)
 
-## Generiert ein einfaches, deterministisches Sternenfeld-Panorama aus dem
-## World-Seed (Sterne als helle Punkte + leichte Nebel-Faerbung aus Noise).
-## Equirectangular (2:1), damit es 1:1 mit PanoramaSkyMaterial funktioniert.
 func _build_procedural_starfield() -> ImageTexture:
-	var width := 512
+	var width  := 512
 	var height := 256
 	var img := Image.create(width, height, false, Image.FORMAT_RGB8)
 

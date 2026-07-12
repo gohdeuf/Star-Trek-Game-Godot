@@ -2,9 +2,8 @@ class_name HelpOverlay
 extends Control
 # Hilfetext-Overlay mit Steuerungsuebersicht (siehe Referenz Abschnitt 12 + 13).
 #
-# Texte kommen jetzt aus dem Locale-Autoload (res://data/locale/<sprache>.json)
-# statt hartcodiert im Code zu stehen. Bei Sprachwechsel (F9, siehe
-# Locale.cycle_language()) wird der Text live neu aufgebaut.
+# Texte kommen aus dem Locale-Autoload (res://data/locale/<sprache>.json).
+# Bei Sprachwechsel (Shift+L) wird der Text live neu aufgebaut.
 
 var _label: Label
 
@@ -25,12 +24,13 @@ func _refresh_text() -> void:
 	_label.text = _help_text()
 
 func _help_text() -> String:
-	return "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" % [
+	return "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" % [
 		Locale.t("help.title"),
 		Locale.t("help.move"),
 		Locale.t("help.pitch_yaw"),
 		Locale.t("help.roll"),
 		Locale.t("help.vertical"),
+		Locale.t("help.build_mine"),
 		Locale.t("help.free_cam"),
 		Locale.t("help.map"),
 		Locale.t("help.quit"),

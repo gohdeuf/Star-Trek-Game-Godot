@@ -1,40 +1,36 @@
 extends Node
 # Autoload: GameDatabase
 #
-# Persistenzschicht (JSON-basiert statt SQLite, siehe Referenz Abschnitt 2).
+# Persistenzschicht (JSON-basiert, siehe Referenz Abschnitt 2).
 # Speichert:
-#   - world_meta.json: World-Seed (Minecraft-Stil, siehe Abschnitt 3) + letzte Spielerposition
-#   - sectors/<sector_id>.json: vom Spieler veraenderte Daten eines Sektors
-#     (Stationen, Schiffe, abgebaute Planeten-Ressourcen)
+#   - world_meta.json: World-Seed + letzte Spielerposition
+#   - sectors/<sector_id>.json: vom Spieler veraenderte Sektordaten
 
-const SAVE_DIR := "user://savegame/"
-const META_FILE := SAVE_DIR + "world_meta.json"
+const SAVE_DIR    := "user://savegame/"
+const META_FILE   := SAVE_DIR + "world_meta.json"
 const SECTORS_DIR := SAVE_DIR + "sectors/"
 
-var world_seed: int = 0
+var world_seed:      int     = 0
 var player_position: Vector3 = Vector3.ZERO
 
-## True zwischen dem allerersten Start einer neuen Welt (noch keine Save-Datei
-## vorhanden) und der Bestaetigung im WorldSeedDialog. Solange dieser Wert
-## true ist, ist world_seed noch NICHT final gesetzt -> Main.gd darf in
-## diesem Zustand noch keine Sektorgenerierung anstossen!
+## True zwischen dem allerersten Start und der Bestaetigung im WorldSeedDialog.
 var needs_seed_setup: bool = false
 
 func _ready() -> void:
 	_ensure_save_dirs()
 	_load_or_create_world_meta()
-	# Hinweis: "user://" ist KEIN Ordner im Godot-Projektverzeichnis, sondern
-	# zeigt auf einen OS-spezifischen Nutzerdaten-Ordner. Diese Zeile gibt den
-	# tatsaechlichen, absoluten Pfad im Godot-Output-Panel aus, damit man die
-	# Speicherdatei im Explorer/Finder wiederfindet. Alternativ im Editor:
-	# Menue "Projekt" -> "Nutzerdaten-Ordner oeffnen" (Godot 4.3).
 	print("GameDatabase: Speicherort = %s" % [ProjectSettings.globalize_path(SAVE_DIR)])
 
 func _ensure_save_dirs() -> void:
-	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
-	DirAccess.make_dir_recursive_absolute(SECTORS_DIR)
+	# BUGFIX: make_dir_recursive_absolute akzeptiert keine virtuellen Godot-
+	# Pfade (user://). Stattdessen DirAccess.open("user://") + make_dir_recursive
+	# mit relativem Pfad verwenden, was den vollen Pfad user://savegame/sectors
+	# rekursiv anlegt.
+	var dir := DirAccess.open("user://")
+	if dir != null:
+		dir.make_dir_recursive("savegame/sectors")
 
-# --- World-Seed (siehe Referenz Abschnitt 3) ---
+# --- World-Seed ---
 
 func _load_or_create_world_meta() -> void:
 	if FileAccess.file_exists(META_FILE):
@@ -50,23 +46,9 @@ func _load_or_create_world_meta() -> void:
 				return
 		else:
 			push_error("GameDatabase: world_meta.json konnte nicht gelesen werden (%s)." % [error_string(FileAccess.get_open_error())])
-	# Kein gespeicherter Seed vorhanden -> neue Welt. Die eigentliche
-	# Seed-Erzeugung wird zurueckgestellt, bis der Spieler im
-	# WorldSeedDialog optional einen eigenen Seed eingegeben hat
-	# (siehe finish_new_world_setup(), aufgerufen von Main.gd).
 	needs_seed_setup = true
 
 func _parse_seed_value(raw) -> int:
-	# BUGFIX: Aeltere Speicherstaende hatten den Seed als reine JSON-Zahl
-	# abgelegt. JSON kennt nur 64-Bit-Floats (max. ~2^53 verlustfrei
-	# darstellbar); ein 64-Bit-Int-Seed (bis ~1.8e19) wird beim Parsen dadurch
-	# gerundet. Das war die Ursache dafuer, dass nach einem Neustart ein
-	# ANDERER Seed geladen wurde als urspruenglich gespeichert -> andere
-	# Sektorinhalte trotz "derselben" Welt. Neue Speicherstaende legen den
-	# Seed daher als String ab (siehe save_world_meta()), der hier verlustfrei
-	# zurueckkonvertiert wird. Alte Zahlen-Speicherstaende werden weiterhin
-	# gelesen (Abwaertskompatibilitaet), koennen aber noch den alten,
-	# gerundeten Seed enthalten.
 	if raw is String:
 		return raw.to_int()
 	return int(raw)
@@ -74,13 +56,9 @@ func _parse_seed_value(raw) -> int:
 func _generate_random_seed() -> int:
 	randomize()
 	var high := randi()
-	var low := randi()
+	var low  := randi()
 	return (high << 32) | low
 
-## Wird einmalig aufgerufen, nachdem der Spieler im WorldSeedDialog bestaetigt
-## hat (siehe Main.gd). Setzt entweder einen aus Text abgeleiteten Seed oder
-## einen zufaelligen 64-Bit-Seed und speichert ihn sofort, bevor irgendeine
-## Sektorgenerierung stattfindet (siehe Referenz Abschnitt 3, Punkt 2).
 func finish_new_world_setup(custom_seed_text: String = "") -> void:
 	if custom_seed_text.strip_edges() != "":
 		set_world_seed_from_text(custom_seed_text.strip_edges())
@@ -89,11 +67,6 @@ func finish_new_world_setup(custom_seed_text: String = "") -> void:
 		save_world_meta()
 	needs_seed_setup = false
 
-## Optional: Spieler gibt beim Erstellen einer neuen Welt einen eigenen
-## Seed (Text oder Zahl) ein (Minecraft-Stil, Referenz Abschnitt 3.4). Wird
-## per SHA256 auf einen vollen 64-Bit-Wert gehasht (analog zu
-## SectorUtils.seed_for_sector), fuer eine bessere Verteilung als ein
-## einfacher 32-Bit-String-Hash.
 func set_world_seed_from_text(text: String) -> void:
 	var sha := text.sha256_buffer()
 	var seed_int: int = 0
@@ -104,8 +77,6 @@ func set_world_seed_from_text(text: String) -> void:
 
 func save_world_meta() -> void:
 	var data := {
-		# BUGFIX: als String gespeichert statt als Zahl (siehe _parse_seed_value
-		# fuer die Begruendung) -> verlustfreier Roundtrip fuer 64-Bit-Seeds.
 		"world_seed": str(world_seed),
 		"player_position": {
 			"x": player_position.x,
@@ -125,7 +96,7 @@ func save_player_position(pos: Vector3) -> void:
 	player_position = pos
 	save_world_meta()
 
-# --- Sektor-Daten (Stationen, Schiffe, Ressourcen-Overrides) ---
+# --- Sektor-Daten ---
 
 func _sector_file(sector_id: String) -> String:
 	return SECTORS_DIR + sector_id + ".json"

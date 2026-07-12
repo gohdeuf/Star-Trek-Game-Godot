@@ -1,27 +1,19 @@
 extends Node
 # Autoload: PlanetClassDB
-#
-# Star-Trek-Planetenklassifizierung (siehe Referenz Abschnitt 7).
-# Feste Planeten: D, H, K, L, M, N, Y
-# Gasriesen-Subklassen: J, T, 6, 7, 9
-#
-# Hinweis: Radius/Farbe/Gewichtung sind sinnvolle Default-Werte, da die
-# Referenz nur fuer D (2000-5000) und Gasriesen (0) explizite
-# Ressourcen-Bereiche vorgibt. Leicht ueber dieses Dictionary anpassbar.
 
 var classes: Dictionary = {
-	"D": {"type": "rocky", "radius": [4.0, 8.0], "color": Color(0.47, 0.43, 0.39), "resources": [2000, 5000], "weight": 12},
-	"H": {"type": "rocky", "radius": [5.0, 10.0], "color": Color(0.75, 0.59, 0.35), "resources": [500, 1500], "weight": 12},
-	"K": {"type": "rocky", "radius": [5.0, 9.0], "color": Color(0.67, 0.35, 0.24), "resources": [800, 2000], "weight": 12},
-	"L": {"type": "rocky", "radius": [6.0, 10.0], "color": Color(0.47, 0.55, 0.31), "resources": [600, 1800], "weight": 12},
-	"M": {"type": "rocky", "radius": [6.0, 12.0], "color": Color(0.27, 0.51, 0.71), "resources": [300, 1000], "weight": 12},
-	"N": {"type": "rocky", "radius": [6.0, 11.0], "color": Color(0.78, 0.67, 0.35), "resources": [1000, 2500], "weight": 10},
-	"Y": {"type": "rocky", "radius": [4.0, 9.0], "color": Color(0.35, 0.24, 0.24), "resources": [1500, 4000], "weight": 6},
-	"J": {"type": "gas", "radius": [15.0, 30.0], "color": Color(0.82, 0.71, 0.55), "resources": [0, 0], "weight": 5},
-	"T": {"type": "gas", "radius": [12.0, 25.0], "color": Color(0.71, 0.59, 0.78), "resources": [0, 0], "weight": 5},
-	"6": {"type": "gas", "radius": [10.0, 20.0], "color": Color(0.59, 0.71, 0.82), "resources": [0, 0], "weight": 4},
-	"7": {"type": "gas", "radius": [10.0, 22.0], "color": Color(0.78, 0.55, 0.55), "resources": [0, 0], "weight": 4},
-	"9": {"type": "gas", "radius": [14.0, 28.0], "color": Color(0.63, 0.63, 0.47), "resources": [0, 0], "weight": 4},
+	"D": {"type": "rocky", "radius": [4.0,  8.0],  "color": Color(0.47, 0.43, 0.39), "resources": [2000, 5000], "weight": 12},
+	"H": {"type": "rocky", "radius": [5.0, 10.0],  "color": Color(0.75, 0.59, 0.35), "resources": [500,  1500], "weight": 12},
+	"K": {"type": "rocky", "radius": [5.0,  9.0],  "color": Color(0.67, 0.35, 0.24), "resources": [800,  2000], "weight": 12},
+	"L": {"type": "rocky", "radius": [6.0, 10.0],  "color": Color(0.47, 0.55, 0.31), "resources": [600,  1800], "weight": 12},
+	"M": {"type": "rocky", "radius": [6.0, 12.0],  "color": Color(0.27, 0.51, 0.71), "resources": [300,  1000], "weight": 12},
+	"N": {"type": "rocky", "radius": [6.0, 11.0],  "color": Color(0.78, 0.67, 0.35), "resources": [1000, 2500], "weight": 10},
+	"Y": {"type": "rocky", "radius": [4.0,  9.0],  "color": Color(0.35, 0.24, 0.24), "resources": [1500, 4000], "weight":  6},
+	"J": {"type": "gas",   "radius": [15.0, 30.0], "color": Color(0.82, 0.71, 0.55), "resources": [0, 0],       "weight":  5},
+	"T": {"type": "gas",   "radius": [12.0, 25.0], "color": Color(0.71, 0.59, 0.78), "resources": [0, 0],       "weight":  5},
+	"6": {"type": "gas",   "radius": [10.0, 20.0], "color": Color(0.59, 0.71, 0.82), "resources": [0, 0],       "weight":  4},
+	"7": {"type": "gas",   "radius": [10.0, 22.0], "color": Color(0.78, 0.55, 0.55), "resources": [0, 0],       "weight":  4},
+	"9": {"type": "gas",   "radius": [14.0, 28.0], "color": Color(0.63, 0.63, 0.47), "resources": [0, 0],       "weight":  4},
 }
 
 func weighted_random_class(rng: RandomNumberGenerator) -> String:
