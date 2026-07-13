@@ -1,19 +1,16 @@
 extends Node
 # Autoload: GameDatabase
-#
-# Persistenzschicht (JSON-basiert, siehe Referenz Abschnitt 2).
-# Speichert:
-#   - world_meta.json: World-Seed + letzte Spielerposition
-#   - sectors/<sector_id>.json: vom Spieler veraenderte Sektordaten
+# Variant-sicher: ueberall explizite Typen oder 'var x: Variant = ...'
+# statt ':=' bei JSON-Ergebnissen.
 
 const SAVE_DIR    := "user://savegame/"
 const META_FILE   := SAVE_DIR + "world_meta.json"
 const SECTORS_DIR := SAVE_DIR + "sectors/"
 
-var world_seed:      int     = 0
-var player_position: Vector3 = Vector3.ZERO
-
-## True zwischen dem allerersten Start und der Bestaetigung im WorldSeedDialog.
+var world_seed:       int        = 0
+var player_position:  Vector3    = Vector3.ZERO
+var player_rotation:  Quaternion = Quaternion.IDENTITY
+var player_inventory: Dictionary = {"minerals": 0.0, "deuterium": 0.0}
 var needs_seed_setup: bool = false
 
 func _ready() -> void:
@@ -22,10 +19,6 @@ func _ready() -> void:
 	print("GameDatabase: Speicherort = %s" % [ProjectSettings.globalize_path(SAVE_DIR)])
 
 func _ensure_save_dirs() -> void:
-	# BUGFIX: make_dir_recursive_absolute akzeptiert keine virtuellen Godot-
-	# Pfade (user://). Stattdessen DirAccess.open("user://") + make_dir_recursive
-	# mit relativem Pfad verwenden, was den vollen Pfad user://savegame/sectors
-	# rekursiv anlegt.
 	var dir := DirAccess.open("user://")
 	if dir != null:
 		dir.make_dir_recursive("savegame/sectors")
@@ -33,30 +26,50 @@ func _ensure_save_dirs() -> void:
 # --- World-Seed ---
 
 func _load_or_create_world_meta() -> void:
-	if FileAccess.file_exists(META_FILE):
-		var f := FileAccess.open(META_FILE, FileAccess.READ)
-		if f != null:
-			var data = JSON.parse_string(f.get_as_text())
-			f.close()
-			if data is Dictionary and data.has("world_seed"):
-				world_seed = _parse_seed_value(data["world_seed"])
-				var p: Dictionary = data.get("player_position", {"x": 0, "y": 0, "z": 0})
-				player_position = Vector3(p.get("x", 0.0), p.get("y", 0.0), p.get("z", 0.0))
-				needs_seed_setup = false
-				return
-		else:
-			push_error("GameDatabase: world_meta.json konnte nicht gelesen werden (%s)." % [error_string(FileAccess.get_open_error())])
-	needs_seed_setup = true
+	if not FileAccess.file_exists(META_FILE):
+		needs_seed_setup = true
+		return
+	var f := FileAccess.open(META_FILE, FileAccess.READ)
+	if f == null:
+		push_error("GameDatabase: world_meta.json kann nicht gelesen werden.")
+		needs_seed_setup = true
+		return
+	var text := f.get_as_text()
+	f.close()
+	# JSON.parse_string gibt Variant zurueck -> explizit als Variant deklarieren
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		needs_seed_setup = true
+		return
+	var data: Dictionary = parsed
+	if not data.has("world_seed"):
+		needs_seed_setup = true
+		return
 
-func _parse_seed_value(raw) -> int:
+	world_seed = _parse_seed_value(data["world_seed"])
+
+	var p: Dictionary = data.get("player_position", {"x": 0.0, "y": 0.0, "z": 0.0})
+	player_position = Vector3(p.get("x", 0.0), p.get("y", 0.0), p.get("z", 0.0))
+
+	var r: Dictionary = data.get("player_rotation", {"x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0})
+	player_rotation = Quaternion(r.get("x", 0.0), r.get("y", 0.0), r.get("z", 0.0), r.get("w", 1.0))
+
+	var inv: Dictionary = data.get("player_inventory", {"minerals": 0.0, "deuterium": 0.0})
+	player_inventory = {
+		"minerals":  float(inv.get("minerals",  0.0)),
+		"deuterium": float(inv.get("deuterium", 0.0)),
+	}
+	needs_seed_setup = false
+
+func _parse_seed_value(raw: Variant) -> int:
 	if raw is String:
-		return raw.to_int()
+		return (raw as String).to_int()
 	return int(raw)
 
 func _generate_random_seed() -> int:
 	randomize()
-	var high := randi()
-	var low  := randi()
+	var high: int = randi()
+	var low:  int = randi()
 	return (high << 32) | low
 
 func finish_new_world_setup(custom_seed_text: String = "") -> void:
@@ -78,23 +91,37 @@ func set_world_seed_from_text(text: String) -> void:
 func save_world_meta() -> void:
 	var data := {
 		"world_seed": str(world_seed),
-		"player_position": {
-			"x": player_position.x,
-			"y": player_position.y,
-			"z": player_position.z,
-		},
+		"player_position": {"x": player_position.x, "y": player_position.y, "z": player_position.z},
+		"player_rotation": {"x": player_rotation.x, "y": player_rotation.y, "z": player_rotation.z, "w": player_rotation.w},
+		"player_inventory": player_inventory,
 	}
 	var f := FileAccess.open(META_FILE, FileAccess.WRITE)
 	if f == null:
-		push_error("GameDatabase: world_meta.json konnte nicht geschrieben werden (%s)." % [error_string(FileAccess.get_open_error())])
+		push_error("GameDatabase: world_meta.json kann nicht geschrieben werden.")
 		return
 	f.store_string(JSON.stringify(data, "  "))
 	f.close()
-	print("GameDatabase: world_meta.json gespeichert (%s)" % [ProjectSettings.globalize_path(META_FILE)])
 
-func save_player_position(pos: Vector3) -> void:
+func save_player_state(pos: Vector3, rot: Quaternion) -> void:
 	player_position = pos
+	player_rotation = rot
 	save_world_meta()
+
+# --- Inventar ---
+
+func get_resource(type: String) -> int:
+	return int(player_inventory.get(type, 0.0))
+
+func add_resource(type: String, amount: float) -> void:
+	var current: float = float(player_inventory.get(type, 0.0))
+	player_inventory[type] = current + amount
+
+func spend_resource(type: String, amount: int) -> bool:
+	var current: float = float(player_inventory.get(type, 0.0))
+	if int(current) < amount:
+		return false
+	player_inventory[type] = current - float(amount)
+	return true
 
 # --- Sektor-Daten ---
 
@@ -107,19 +134,31 @@ func load_sector_data(sector_id: String) -> Dictionary:
 		return {}
 	var f := FileAccess.open(path, FileAccess.READ)
 	if f == null:
-		push_error("GameDatabase: Sektordatei konnte nicht gelesen werden: %s" % [sector_id])
 		return {}
-	var data = JSON.parse_string(f.get_as_text())
+	var text := f.get_as_text()
 	f.close()
-	return data if data is Dictionary else {}
+	var parsed: Variant = JSON.parse_string(text)
+	if parsed is Dictionary:
+		return parsed
+	return {}
 
 func save_sector_data(sector_id: String, data: Dictionary) -> void:
 	var f := FileAccess.open(_sector_file(sector_id), FileAccess.WRITE)
 	if f == null:
-		push_error("GameDatabase: Sektordatei konnte nicht geschrieben werden: %s" % [sector_id])
+		push_error("GameDatabase: Sektordatei kann nicht geschrieben werden: %s" % sector_id)
 		return
 	f.store_string(JSON.stringify(data, "  "))
 	f.close()
+
+func save_planet_state(sector_id: String, planet_name: String, minerals: float, deuterium: float) -> void:
+	var data := load_sector_data(sector_id)
+	var min_ov: Dictionary = data.get("planet_resources", {})
+	var deu_ov: Dictionary = data.get("planet_deuterium", {})
+	min_ov[planet_name] = minerals
+	deu_ov[planet_name] = deuterium
+	data["planet_resources"] = min_ov
+	data["planet_deuterium"] = deu_ov
+	save_sector_data(sector_id, data)
 
 func add_station(sector_id: String, station: Dictionary) -> void:
 	var data := load_sector_data(sector_id)
@@ -133,11 +172,4 @@ func add_ship(sector_id: String, ship: Dictionary) -> void:
 	var ships: Array = data.get("ships", [])
 	ships.append(ship)
 	data["ships"] = ships
-	save_sector_data(sector_id, data)
-
-func update_planet_resource(sector_id: String, planet_name: String, current_value: float) -> void:
-	var data := load_sector_data(sector_id)
-	var overrides: Dictionary = data.get("planet_resources", {})
-	overrides[planet_name] = current_value
-	data["planet_resources"] = overrides
 	save_sector_data(sector_id, data)
