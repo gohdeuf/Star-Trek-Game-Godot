@@ -10,9 +10,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("cycle_language"): Locale.cycle_language()
 func _refresh_text() -> void: _label.text = _help_text()
 func _help_text() -> String:
-	return "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" % [
-		Locale.t("help.title"), Locale.t("help.move"), Locale.t("help.pitch_yaw"),
-		Locale.t("help.roll"), Locale.t("help.vertical"), Locale.t("help.build_mine"),
-		Locale.t("help.free_cam"), Locale.t("help.map"), Locale.t("help.quit"),
+	return "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s" % [
+		Locale.t("help.title"),
+		Locale.t("help.move"),
+		Locale.t("help.pitch_yaw"),
+		Locale.t("help.roll"),
+		Locale.t("help.vertical"),
+		Locale.t("help.build_station"),
+		Locale.t("help.build_parts"),
+		Locale.t("help.build_mine"),
+		Locale.t("help.free_cam"),
+		Locale.t("help.map"),
+		Locale.t("help.warp"),
+		Locale.t("help.weapons"),
+		Locale.t("help.dock"),
+		Locale.t("help.ship_reactor"),
+		Locale.t("help.quit"),
 		Locale.t("help.language", {"lang": Locale.current_language}),
 	]

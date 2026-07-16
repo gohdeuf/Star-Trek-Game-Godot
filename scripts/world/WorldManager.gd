@@ -1,11 +1,15 @@
 class_name WorldManager
 extends Node3D
 
-var star_scene:     PackedScene = preload("res://scenes/Star.tscn")
-var planet_scene:   PackedScene = preload("res://scenes/Planet.tscn")
-var moon_scene:     PackedScene = preload("res://scenes/Moon.tscn")
-var station_scene:  PackedScene = preload("res://scenes/Station.tscn")
-var npc_ship_scene: PackedScene = preload("res://scenes/NPCShip.tscn")
+var star_scene:             PackedScene = preload("res://scenes/Star.tscn")
+var planet_scene:           PackedScene = preload("res://scenes/Planet.tscn")
+var moon_scene:             PackedScene = preload("res://scenes/Moon.tscn")
+var station_scene:          PackedScene = preload("res://scenes/Station.tscn")
+var main_station_scene:     PackedScene = preload("res://scenes/station_parts/MainStationPart.tscn")
+var fusion_core_scene:      PackedScene = preload("res://scenes/station_parts/FusionCore.tscn")
+var am_factory_small_scene: PackedScene = preload("res://scenes/station_parts/AntimatterFactorySmall.tscn")
+var am_factory_big_scene:   PackedScene = preload("res://scenes/station_parts/AntimatterFactoryBig.tscn")
+var npc_ship_scene:         PackedScene = preload("res://scenes/NPCShip.tscn")
 const SECTOR_UTILS := preload("res://scripts/autoload/SectorUtils.gd")
 
 var player: Node3D
@@ -19,12 +23,10 @@ func get_sector_container(sector_id: String) -> Node3D:
 
 func _process(_delta: float) -> void:
 	if player == null: return
-	# Explizite Typen vermeiden Variant-Inferenzfehler bei SECTOR_UTILS-Aufrufen
 	var coords: Vector3i  = SECTOR_UTILS.world_to_sector_coords(player.global_position)
 	var sector_id: String = SECTOR_UTILS.sector_coords_to_id(coords.x, coords.y, coords.z)
 	if sector_id != _current_sector_id:
-		_current_sector_id = sector_id
-		_on_sector_changed(sector_id)
+		_current_sector_id = sector_id; _on_sector_changed(sector_id)
 
 func _on_sector_changed(center_sector_id: String) -> void:
 	var needed: Array = SECTOR_UTILS.neighbor_sector_ids(center_sector_id)
@@ -52,11 +54,20 @@ func _load_sector(sector_id: String) -> void:
 			moon.setup(planet, md["orbit_radius"], md["angular_speed_deg"])
 	var sector_save := GameDatabase.load_sector_data(sector_id)
 	for sd in sector_save.get("stations", []):
-		var st := station_scene.instantiate(); container.add_child(st)
-		st.global_position = Vector3(sd.pos_x, sd.pos_y, sd.pos_z)
+		var inst: Node3D = _instantiate_station_part(sd.get("type", "station"))
+		container.add_child(inst)
+		inst.global_position = Vector3(float(sd.get("pos_x",0)), float(sd.get("pos_y",0)), float(sd.get("pos_z",0)))
 	for sh in sector_save.get("ships", []):
 		var npc := npc_ship_scene.instantiate(); container.add_child(npc)
-		npc.global_position = Vector3(sh.pos_x, sh.pos_y, sh.pos_z)
+		npc.global_position = Vector3(float(sh.get("pos_x",0)), float(sh.get("pos_y",0)), float(sh.get("pos_z",0)))
+
+func _instantiate_station_part(part_type: String) -> Node3D:
+	match part_type:
+		"main_station":    return main_station_scene.instantiate()
+		"fusion_core":     return fusion_core_scene.instantiate()
+		"am_factory_small": return am_factory_small_scene.instantiate()
+		"am_factory_big":  return am_factory_big_scene.instantiate()
+		_:                 return station_scene.instantiate()  # Legacy
 
 func _unload_sector(sector_id: String) -> void:
 	var container: Node3D = _loaded_sectors.get(sector_id)
@@ -68,14 +79,11 @@ func _save_sector_planet_resources(sector_id: String, container: Node3D) -> void
 	for child in container.get_children():
 		if not child is Planet: continue
 		var planet: Planet = child as Planet
-		GameDatabase.save_planet_state(
-			sector_id, planet.planet_data["name"],
+		GameDatabase.save_planet_state(sector_id, planet.planet_data["name"],
 			planet.planet_data["resources"]["current"],
-			planet.planet_data.get("deuterium", {}).get("current", 0.0)
-		)
+			planet.planet_data.get("deuterium", {}).get("current", 0.0))
 
 func save_all_sector_resources() -> void:
 	for sector_id in _loaded_sectors.keys():
 		var container: Node3D = _loaded_sectors[sector_id]
-		if container != null:
-			_save_sector_planet_resources(sector_id, container)
+		if container != null: _save_sector_planet_resources(sector_id, container)

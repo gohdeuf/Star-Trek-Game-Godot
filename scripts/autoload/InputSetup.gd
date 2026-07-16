@@ -9,6 +9,12 @@ func _ready()->void:
 	_add("toggle_free_cam",KEY_F10); _add("toggle_map",KEY_TAB)
 	_add("quit_game",KEY_ESCAPE);    _add("boost",KEY_SHIFT)
 	_add("build_station",KEY_B);     _add("mine_resource",KEY_M)
+	_add("build_fusion",KEY_2);      _add("build_am_small",KEY_3)
+	_add("build_am_big",KEY_4)
+	_add("fire_primary",KEY_F);      _add("fire_torpedo",KEY_T)
+	_add("next_weapon",KEY_X);       _add("toggle_warp",KEY_J)
+	_add("dock_station",KEY_K);      _add("emergency_ai_toggle",KEY_N)
+	_add("toggle_ship_am",KEY_P)
 	_add_shift("cycle_language",KEY_L)
 func _add_shift(n:String,k:Key)->void:
 	if InputMap.has_action(n): return

@@ -37,4 +37,4 @@ func _draw() -> void:
 				draw_circle(_world_to_map(p + Vector3(pl["orbit_radius"], 0, 0)), 2.0, Color(0.6, 0.6, 0.9))
 	draw_line(pmp, pmp + Vector2(-sin(player.rotation.y), -cos(player.rotation.y)) * 12.0, Color(0.2, 1.0, 0.3), 2.0)
 	draw_circle(pmp, 5.0, Color(0.2, 1.0, 0.3))
-	draw_string(ThemeDB.fallback_font, Vector2(10, size.y - 10), Locale.t("map.info", {"x": "%.0f" % player.global_position.x, "y": "%.0f" % player.global_position.y, "z": "%.0f" % player.global_position.z, "zoom": "%.1f" % _zoom, "count": _systems.size()}))
+	draw_string(ThemeDB.fallback_font, Vector2(10, size.y - 10), Locale.t("map.info", {"x":"%.0f"%player.global_position.x,"y":"%.0f"%player.global_position.y,"z":"%.0f"%player.global_position.z,"zoom":"%.1f"%_zoom,"count":_systems.size()}))

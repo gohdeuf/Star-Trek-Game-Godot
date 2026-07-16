@@ -27,8 +27,8 @@ func _update_from_local(local_pos: Vector2) -> void:
 	_set_key_state(key_right, mag >= dead_zone and norm.x >  0.35)
 func _reset() -> void:
 	_knob_offset = Vector2.ZERO; queue_redraw()
-	_set_key_state(key_up, false); _set_key_state(key_down, false)
-	_set_key_state(key_left, false); _set_key_state(key_right, false)
+	_set_key_state(key_up,false); _set_key_state(key_down,false)
+	_set_key_state(key_left,false); _set_key_state(key_right,false)
 func _set_key_state(key: Key, pressed: bool) -> void:
 	if key == KEY_NONE: return
 	if _held_keys.get(key, false) == pressed: return

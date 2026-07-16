@@ -1,9 +1,7 @@
 class_name Main
 extends Node3D
-# Neu: save_player_state() speichert Position+Rotation; InventoryHUD eingebunden;
-# world_manager.save_all_sector_resources() beim Beenden aufgerufen.
 
-const SAVE_INTERVAL := 2.0
+const SAVE_INTERVAL     := 2.0
 const SKYBOX_ASSET_PATH := "res://assets/skybox/starfield_panorama.png"
 
 var ship: Node3D; var camera_rig: CameraRig
@@ -27,22 +25,38 @@ func _start_game() -> void:
 	camera_rig = preload("res://scenes/CameraRig.tscn").instantiate(); add_child(camera_rig)
 	camera_rig.set_target(ship)
 	world_manager = WorldManager.new(); add_child(world_manager); world_manager.set_player(ship)
-	soi_tracker = SOITracker.new(); add_child(soi_tracker); soi_tracker.set_player(ship)
+	soi_tracker = SOITracker.new();     add_child(soi_tracker);   soi_tracker.set_player(ship)
 
 	var soi_notification := SOINotification.new(); add_child(soi_notification)
-	soi_tracker.enter_system.connect(func(sys:Dictionary)->void:
-		soi_notification.show_message(Locale.t("soi.entering",{"system":sys.get("name","?")})))
-	soi_tracker.exit_system.connect(func(sys:Dictionary)->void:
-		soi_notification.show_message(Locale.t("soi.leaving",{"system":sys.get("name","?")})))
+	soi_tracker.enter_system.connect(func(sys: Dictionary) -> void:
+		soi_notification.show_message(Locale.t("soi.entering", {"system": sys.get("name","?")})))
+	soi_tracker.exit_system.connect(func(sys: Dictionary) -> void:
+		soi_notification.show_message(Locale.t("soi.leaving",  {"system": sys.get("name","?")})))
 
 	var player_actions := PlayerActions.new(); add_child(player_actions)
 	player_actions.setup(ship, world_manager, soi_notification)
+
+	var weapon_system := WeaponSystem.new(); ship.add_child(weapon_system)
+	weapon_system.setup(ship, soi_notification)
+
+	var warp_drive := WarpDrive.new(); ship.add_child(warp_drive)
+	warp_drive.setup(ship, soi_notification)
+
+	var crew_system := CrewSystem.new(); ship.add_child(crew_system)
+	crew_system.setup(ship, soi_notification)
+
+	var ship_reactor := ShipReactor.new(); ship.add_child(ship_reactor)
+	ship_reactor.setup(ship, soi_notification)
+
+	var docking_system := DockingSystem.new(); add_child(docking_system)
+	docking_system.setup(ship, soi_notification)
+
+	ship.init_systems(weapon_system, warp_drive, crew_system)
 
 	var map: GalaxyMap = preload("res://scenes/UI/GalaxyMap.tscn").instantiate()
 	add_child(map); map.set_player(ship)
 	add_child(preload("res://scenes/UI/HelpOverlay.tscn").instantiate())
 	add_child(preload("res://scenes/UI/InventoryHUD.tscn").instantiate())
-
 	if TouchControls.should_show():
 		add_child(preload("res://scenes/UI/TouchControls.tscn").instantiate())
 
@@ -67,12 +81,13 @@ func _build_procedural_starfield() -> ImageTexture:
 	noise.frequency = 0.015; noise.fractal_octaves = 3
 	for y in range(height):
 		for x in range(width):
-			var n := noise.get_noise_2d(float(x), float(y)); var neb: float = clamp(n * 0.08, 0.0, 0.1)
+			var n := noise.get_noise_2d(float(x), float(y))
+			var neb: float = clamp(n * 0.08, 0.0, 0.1)
 			img.set_pixel(x, y, Color(0.01+neb*0.5, 0.01+neb*0.35, 0.035+neb*0.7))
 	var rng := RandomNumberGenerator.new(); rng.seed = GameDatabase.world_seed
 	for i in range(int(width*height*0.012)):
 		var bri := rng.randf_range(0.35, 1.0); var tint := rng.randf_range(0.85, 1.0)
-		img.set_pixel(rng.randi_range(0,width-1), rng.randi_range(0,height-1), Color(bri, bri*tint, bri))
+		img.set_pixel(rng.randi_range(0,width-1), rng.randi_range(0,height-1), Color(bri,bri*tint,bri))
 	return ImageTexture.create_from_image(img)
 
 func _process(delta: float) -> void:
@@ -83,8 +98,6 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("quit_game"):
-		if ship != null:
-			GameDatabase.save_player_state(ship.global_position, ship.quaternion)
-		if world_manager != null:
-			world_manager.save_all_sector_resources()
+		if ship != null: GameDatabase.save_player_state(ship.global_position, ship.quaternion)
+		if world_manager != null: world_manager.save_all_sector_resources()
 		get_tree().quit()

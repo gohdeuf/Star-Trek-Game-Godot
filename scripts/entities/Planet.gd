@@ -9,8 +9,7 @@ static var _tex_cache: Dictionary = {}
 func setup(data: Dictionary, star: Node3D) -> void:
 	planet_data = data; star_node = star
 	add_to_group("planets")
-	var cls: String = data["class"]
-	var cd: Dictionary = PlanetClassDB.classes[cls]
+	var cls: String = data["class"]; var cd: Dictionary = PlanetClassDB.classes[cls]
 	var r: float = data["radius"]
 	var mi := MeshInstance3D.new()
 	var sp := SphereMesh.new(); sp.radius = r; sp.height = r * 2.0; mi.mesh = sp

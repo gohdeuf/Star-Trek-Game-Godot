@@ -1,6 +1,5 @@
 class_name InventoryHUD
 extends Control
-# Ressourcenanzeige oben rechts: Mineralien + Deuterium aus player_inventory.
 const REFRESH_INTERVAL := 0.25
 var _label: Label; var _timer: float = 0.0
 func _ready() -> void:
@@ -9,8 +8,8 @@ func _ready() -> void:
 	_label.anchor_left  = 1.0; _label.anchor_right  = 1.0
 	_label.anchor_top   = 0.0; _label.anchor_bottom = 0.0
 	var top := 100.0 if TouchControls.should_show() else 10.0
-	_label.offset_left   = -220.0; _label.offset_right  = -10.0
-	_label.offset_top    = top;    _label.offset_bottom = top + 56.0
+	_label.offset_left  = -220.0; _label.offset_right  = -10.0
+	_label.offset_top   = top;    _label.offset_bottom = top + 72.0
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_label.add_theme_color_override("font_color", Color(0.75, 0.93, 1.0, 0.95))
 	_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
@@ -24,6 +23,7 @@ func _process(delta: float) -> void:
 	if _timer >= REFRESH_INTERVAL: _timer = 0.0; _refresh()
 func _refresh() -> void:
 	_label.text = Locale.t("hud.inventory", {
-		"minerals":  GameDatabase.get_resource("minerals"),
-		"deuterium": GameDatabase.get_resource("deuterium"),
+		"minerals":   GameDatabase.get_resource("minerals"),
+		"deuterium":  GameDatabase.get_resource("deuterium"),
+		"antimatter": GameDatabase.get_resource("antimatter"),
 	})
