@@ -6,7 +6,7 @@ extends Node
 #   Laufend:      WARP_FUEL_RATE Deu/Sek  +  WARP_AM_RATE AM/Sek
 # Keine Manöver moeglich waehrend Warp aktiv.
 
-const WARP_SPEED          := 1000.0
+const WARP_SPEED          := 15000.0
 const WARP_FUEL_RATE      := 20.0    # Deuterium/Sek
 const WARP_AM_RATE        := 1.0     # Antimaterie/Sek
 const WARP_ENGAGE_DEU_COST := 100    # Deuterium beim Aktivieren

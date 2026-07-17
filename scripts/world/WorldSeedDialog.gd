@@ -1,3 +1,4 @@
+class_name WorldSeedDialog
 extends Control
 signal seed_confirmed(custom_seed_text: String)
 var _line_edit: LineEdit; var _title_label: Label; var _info_label: Label
