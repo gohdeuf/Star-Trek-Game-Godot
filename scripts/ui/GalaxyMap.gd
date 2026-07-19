@@ -25,6 +25,10 @@ func _world_to_map(pos: Vector3) -> Vector2:
 func _draw() -> void:
 	if player == null: return
 	var pmp := _world_to_map(player.global_position)
+	for station in get_tree().get_nodes_in_group("stations"):
+		if station is Node3D:
+			var mp := _world_to_map((station as Node3D).global_position)
+			draw_circle(mp, 2.2, Color(0.2, 0.9, 0.9))
 	for sys in _systems:
 		var p: Vector3 = sys["position"]; var mp := _world_to_map(p)
 		draw_circle(mp, 4.0, Color(1.0, 0.9, 0.4)); draw_string(ThemeDB.fallback_font, mp + Vector2(6, -6), sys["name"])

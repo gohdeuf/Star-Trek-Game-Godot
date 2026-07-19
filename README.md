@@ -1,6 +1,3 @@
-**Also i do not recommend playing this beta of V 0.2.0 because it might cause photosensitive epilepsy i will remove this warning once it is not there anymore**
-
-
 # Star Trek Sandbox – Godot-Rewrite (v0.2.0)
 
 Engine-Version: Godot **4.3+** (GDScript).

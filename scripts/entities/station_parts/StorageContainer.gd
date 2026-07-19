@@ -18,6 +18,13 @@ func _build_visual() -> void:
 	mat.albedo_color = Color(0.48, 0.45, 0.40); mat.metallic = 0.6; mat.roughness = 0.5
 	body.material_override = mat; add_child(body)
 
+	# Innenraum / Ladebucht
+	var interior := MeshInstance3D.new()
+	var ibm := BoxMesh.new(); ibm.size = Vector3(7.6, 6.6, 10.4)
+	interior.mesh = ibm
+	var imat := StandardMaterial3D.new(); imat.albedo_color = Color(0.18, 0.22, 0.25); imat.roughness = 0.8
+	interior.material_override = imat; add_child(interior)
+
 	# 4 Verstaerkungsrippen (horizontal)
 	var rib_mat := StandardMaterial3D.new()
 	rib_mat.albedo_color = Color(0.3, 0.3, 0.3); rib_mat.metallic = 0.85

@@ -9,6 +9,7 @@ func _ready()->void:
 	_add("toggle_free_cam",KEY_F10); _add("toggle_map",KEY_TAB)
 	_add("quit_game",KEY_ESCAPE);    _add("boost",KEY_SHIFT)
 	_add("build_station",KEY_B);     _add("mine_resource",KEY_M)
+	_add("toggle_ship_interior",KEY_I)
 	_add("place_module",KEY_E)
 	_add("station_management",KEY_H)
 	_add("deposit_resources",KEY_D)

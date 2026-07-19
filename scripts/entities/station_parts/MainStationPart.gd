@@ -20,6 +20,14 @@ func _build_visual() -> void:
 	hub_mat.albedo_color = Color(0.55, 0.65, 0.80); hub_mat.metallic = 0.8; hub_mat.roughness = 0.2
 	hub.material_override = hub_mat; add_child(hub)
 
+	# Innenraum / Docking-Halle
+	var interior := MeshInstance3D.new()
+	var im := BoxMesh.new(); im.size = Vector3(6.0, 3.2, 6.0)
+	interior.mesh = im
+	var interior_mat := StandardMaterial3D.new(); interior_mat.albedo_color = Color(0.16, 0.2, 0.28)
+	interior_mat.metallic = 0.2; interior_mat.roughness = 0.7; interior.material_override = interior_mat
+	add_child(interior)
+
 	# Aeusserer Torus-Ring (langsam drehend)
 	_outer_ring = MeshInstance3D.new()
 	var tm := TorusMesh.new(); tm.inner_radius = 7.5; tm.outer_radius = 9.0
