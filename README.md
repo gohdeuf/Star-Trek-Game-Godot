@@ -1,6 +1,5 @@
-# Star Trek Sandbox – Godot-Rewrite (MVP)
+# Star Trek Sandbox – Godot-Rewrite (v0.2.0)
 
-Erste spielbare Grundlage, basierend auf `godot_rewrite_referenz.md`.
 Engine-Version: Godot **4.3+** (GDScript).
 
 ## Projekt oeffnen
@@ -9,65 +8,78 @@ Engine-Version: Godot **4.3+** (GDScript).
 2. "Import" -> Ordner `StarTrekSandbox` (mit `project.godot`) auswaehlen.
 3. Play druecken (F5) -> startet `scenes/Main.tscn`.
 
-## Was bereits funktioniert
+## Neue Features (v0.2.0)
 
-- **World-Seed (Minecraft-Stil, Referenz Abschnitt 3):** Beim allerersten
-  Start wird ein zufaelliger 64-Bit-Seed erzeugt und in
-  `user://savegame/world_meta.json` gespeichert. Sektor-Inhalte werden aus
-  `(world_seed, sector_id)` per SHA256 deterministisch abgeleitet
-  (`SectorUtils.seed_for_sector`).
-- **Sektor-Generierung:** 35 % Spawn-Chance pro Sektor, Sternposition, SOI
-  300-750, 0-5 Planeten mit gewichteter Klassenwahl (D/H/K/L/M/N/Y + Gasriesen
-  J/T/6/7/9), Orbit-Radius/-Winkel, Namen aus Praefix+Suffix+roemischer Ziffer.
-- **Chunk-Loading:** `WorldManager` laedt/entlaedt den 3x3x3-Nachbarschaftsblock
-  je nach Spielerposition, spawnt Sterne/Planeten/Stationen/NPC-Schiffe.
-- **Sphere-of-Influence-Tracking:** `SOITracker` mit Zustandsmaschine
-  INTERSTELLAR/SYSTEM und Signalen `enter_system`/`exit_system`.
-- **Spielerschiff:** WASD + Pfeiltasten (Pitch/Yaw) + Q/E (Roll) +
-  Space/Strg (Hoch/Runter), aus Primitiven gebautes Enterprise-Modell.
-- **Kamera:** Follow-Modus standardmaessig, F10 -> freie Kamera
-  (RMB+Maus = Drehen, WASD/Space/Strg = Fliegen, Shift = Boost, Scroll = Speed).
-- **Galaxiekarte:** Tab oeffnet/schliesst, Zoom/Pan, Hoehenanzeige (^/v/~),
-  Spieler-Marker mit Rotation, Info-Text.
-- **Persistenz:** Spielerposition + World-Seed in
-  `user://savegame/world_meta.json`; vom Spieler veraenderte Sektordaten
-  (Stationen/Schiffe/Ressourcen-Overrides) in `user://savegame/sectors/*.json`.
+### Waffensystem (F / T / X)
+- **F (halten):** Partikel-Strahl-Emitter (PSE) – kontinuierlicher Energiestrahl, trifft NPCs in 250 Einheiten
+- **T:** Torpedo abfeuern (Kaskaden- oder Antimaterie-Torpedo, je nach aktiver Waffe)
+- **X:** Waffe wechseln: PSE → Kaskaden-Torpedo → Antimaterie-Torpedo
+- Antimaterie-Torpedos kosten 50 Antimaterie-Einheiten (Startbestand: 50)
+- NPC-Schiffe haben 200 HP und explodieren bei 0
 
-## Bewusste Vereinfachungen / naechste Schritte
+### Alcubierre-Metrik-Antrieb (J)
+- **J:** Warpantrieb ein-/ausschalten
+- Aktivierung kostet 100 Deuterium, laufender Verbrauch 20/Sek
+- 100× Schiffsgeschwindigkeit (15.000 Einheiten/Sek), kein Manövrieren möglich
+- Visueller Effekt: animierter Torus-Ringtunnel
+- Bei leerem Deuterium automatische Notabschaltung
 
-- **Persistenz ist JSON-basiert**, nicht SQLite (siehe Referenz Abschnitt 2,
-  dort als gleichwertige Alternative genannt). Falls gewuenscht, spaeter
-  gegen das `godot-sqlite`-GDExtension tauschbar — `GameDatabase.gd` kapselt
-  bereits die komplette Schnittstelle dafuer.
-- **Prozedurale Planetentexturen** (Referenz Abschnitt 8) fehlen noch;
-  Planeten haben aktuell nur eine Flaechenfarbe je Klasse.
-- **Mond-Spawning** ist als Komponente (`Moon.gd`) vorbereitet, aber noch
-  nicht automatisch in die Sektorgenerierung verdrahtet.
-- **Sol-System bei (0,0,0)** beim allerersten Start (Referenz Abschnitt 2,
-  letzter Punkt) ist noch nicht hart codiert — aktuell entscheidet wie bei
-  jedem anderen Sektor der Zufall, ob dort ein System spawnt.
-- **Bau-/Abbau-Gameplay** (Stationen bauen, Planeten abbauen) ist nur als
-  Datenstruktur vorbereitet (`GameDatabase.add_station/add_ship/
-  update_planet_resource`), aber noch nicht mit echtem Gameplay verbunden.
-- **Skybox** ist aktuell ein einfacher `ProceduralSkyMaterial`-Platzhalter,
-  noch kein Sternenfeld-Panorama (Referenz Abschnitt 9).
-- **Lokalisierung/Uebersetzung:** Texte sind aktuell direkt im Code
-  (z. B. `HelpOverlay._help_text()`). Geplant: spaeter ein
-  `Locale`-Autoload, das Texte aus `res://data/locale/<sprache>.json`
-  (Key -> uebersetzter Text) laedt, sodass neue Sprachen ohne Code-Aenderung
-  ergaenzt werden koennen.
+### Stations-Docking (K)
+- **K** in Stationsnähe (< 20 Einheiten): Tween richtet Schiff butterweich aus
+- Andockzustand persistent in `world_meta.json`
+- Erneut **K** drücken zum Ablegen
+
+### Crew-System & Notfall-KI (N)
+- **N:** Notfall-KI manuell ein-/ausschalten (zum Testen)
+- Bei aktiver KI: Schiff flieht automatisch vom nächsten NPC-Schiff
+- Bridge-Zustand (Normal/Beschädigt/Zerstört) beeinflusst Schiffsgeschwindigkeit
+- Wird beim echten Kampfschaden automatisch ausgelöst
+
+### Boost (Shift)
+- Shift beim Fliegen: 3× Schiffsgeschwindigkeit (funktioniert nun auch beim Spielerschiff)
+
+## Steuerung (vollständig)
+
+| Taste | Funktion |
+|-------|----------|
+| W/A/S/D | Bewegen |
+| Pfeiltasten | Pitch/Yaw |
+| Q/E | Roll |
+| Leertaste/Strg | Hoch/Runter |
+| Shift | Boost (3×) |
+| F (halten) | PSE-Strahl |
+| T | Torpedo |
+| X | Waffe wechseln |
+| J | Alcubierre-Antrieb |
+| K | Andocken/Ablegen |
+| N | Notfall-KI |
+| B | Station bauen |
+| M (halten) | Ressourcen abbauen |
+| Tab | Galaxiekarte |
+| F10 | Freie Kamera |
+| Shift+L | Sprache wechseln |
+| Esc | Beenden (speichert) |
 
 ## Projektstruktur
 
 ```
 project.godot
+data/locale/          de.json, en.json
 scripts/
-  autoload/        GameDatabase, SectorUtils, StarNames, PlanetClassDB,
-                    SectorGenerator, InputSetup (alle als Singleton registriert)
-  world/            WorldManager (Chunk-Loading), SOITracker
-  entities/         Ship, Star, Planet, Moon, Station, NPCShip
-  camera/           CameraRig (Follow/Frei)
-  ui/               GalaxyMap, HelpOverlay
-  main/             Main (verdrahtet alles)
-scenes/             Minimal-Szenen (Root-Node + zugehoeriges Skript)
+  autoload/           Locale, GameDatabase, SectorUtils, StarNames,
+                      PlanetClassDB, SectorGenerator, InputSetup
+  camera/             CameraRig
+  entities/           Ship, Star, Planet, Moon, Station, NPCShip, Torpedo
+  main/               Main, PlayerActions
+  systems/            WeaponSystem, WarpDrive, DockingSystem, CrewSystem  [NEU]
+  ui/                 GalaxyMap, HelpOverlay, InventoryHUD, SOINotification,
+                      TouchControls, TouchJoystick, WorldSeedDialog
+  world/              WorldManager, SOITracker
+  station/            station_connecter_1
+scenes/               Minimal-Szenen (.tscn Stubs)
 ```
+## Lizenz
+
+Dieses Projekt ist unter der **GNU General Public License Version 3 (GPLv3)** lizenziert. 
+
+Alle Quelltexte sowie alle im Projekt enthaltenen Medien (Bilder, Grafiken, Töne und Animationen) wurden selbst erstellt und unterliegen ebenfalls den Bedingungen dieser Lizenz. Weitere Details findest du in der Datei [LICENSE](LICENSE).
