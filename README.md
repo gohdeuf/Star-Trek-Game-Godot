@@ -78,3 +78,8 @@ scripts/
   station/            station_connecter_1
 scenes/               Minimal-Szenen (.tscn Stubs)
 ```
+## Lizenz
+
+Dieses Projekt ist unter der **GNU General Public License Version 3 (GPLv3)** lizenziert. 
+
+Alle Quelltexte sowie alle im Projekt enthaltenen Medien (Bilder, Grafiken, Töne und Animationen) wurden selbst erstellt und unterliegen ebenfalls den Bedingungen dieser Lizenz. Weitere Details findest du in der Datei [LICENSE](LICENSE).
