@@ -26,9 +26,16 @@ func _start_game() -> void:
 	_setup_environment()
 	ship = preload("res://scenes/Ship.tscn").instantiate() as Ship
 	add_child(ship)
+
 	camera_rig = preload("res://scenes/CameraRig.tscn").instantiate() as CameraRig
 	add_child(camera_rig)
 	camera_rig.set_target(ship)
+
+	# ── Brücken-View als Kind des Schiffs ──────────────────────────────────────
+	# Kamera ist damit automatisch im Schiff-Koordinatensystem → kein Gimbal-Lock
+	var bridge_view := BridgeView.new()
+	ship.add_child(bridge_view)
+	camera_rig.set_bridge_view(bridge_view)
 
 	world_manager = WorldManager.new(); add_child(world_manager); world_manager.set_player(ship)
 	soi_tracker   = SOITracker.new();   add_child(soi_tracker);   soi_tracker.set_player(ship)
@@ -74,41 +81,30 @@ func _start_game() -> void:
 		add_child(preload("res://scenes/UI/TouchControls.tscn").instantiate())
 
 # ── SOI-Callbacks ─────────────────────────────────────────────────────────────
-
 func _on_enter_system(sys: Dictionary) -> void:
-	_soi_notif.show_message(Locale.t("soi.entering", {"system": sys.get("name", "?")}))
-
+	_soi_notif.show_message(Locale.t("soi.entering", {"system": sys.get("name","?")}))
 func _on_exit_system(sys: Dictionary) -> void:
-	_soi_notif.show_message(Locale.t("soi.leaving", {"system": sys.get("name", "?")}))
-
+	_soi_notif.show_message(Locale.t("soi.leaving",  {"system": sys.get("name","?")}))
 func _on_enter_planet_soi(pd: Dictionary, pnode: Node3D) -> void:
-	_soi_notif.show_message(Locale.t("soi.entering_planet", {"planet": pd.get("name", "?")}))
-	if soi_tracker._active_moon_node == null:
-		ship.set_orbit_carrier(pnode)
-
+	_soi_notif.show_message(Locale.t("soi.entering_planet", {"planet": pd.get("name","?")}))
+	if soi_tracker._active_moon_node == null: ship.set_orbit_carrier(pnode)
 func _on_exit_planet_soi(planet_name: String) -> void:
 	_soi_notif.show_message(Locale.t("soi.leaving_planet", {"planet": planet_name}))
-	if soi_tracker._active_moon_node == null:
-		ship.set_orbit_carrier(null)
-
+	if soi_tracker._active_moon_node == null: ship.set_orbit_carrier(null)
 func _on_enter_moon_soi(mn: String, mnode: Node3D) -> void:
 	_soi_notif.show_message(Locale.t("soi.approaching_moon", {"moon": mn}))
 	ship.set_orbit_carrier(mnode)
-
 func _on_exit_moon_soi(mn: String) -> void:
 	_soi_notif.show_message(Locale.t("soi.leaving_moon", {"moon": mn}))
 	ship.set_orbit_carrier(soi_tracker._active_planet_node)
 
 # ── Umgebung ──────────────────────────────────────────────────────────────────
-
 func _setup_environment() -> void:
 	var env := WorldEnvironment.new(); var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	var sky := Sky.new(); var pano_mat := PanoramaSkyMaterial.new()
-	if ResourceLoader.exists(SKYBOX_ASSET_PATH):
-		pano_mat.panorama = load(SKYBOX_ASSET_PATH)
-	else:
-		pano_mat.panorama = _build_procedural_starfield()
+	if ResourceLoader.exists(SKYBOX_ASSET_PATH): pano_mat.panorama = load(SKYBOX_ASSET_PATH)
+	else: pano_mat.panorama = _build_procedural_starfield()
 	sky.sky_material = pano_mat; environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color  = Color(0.15, 0.16, 0.25)
@@ -124,13 +120,11 @@ func _build_procedural_starfield() -> ImageTexture:
 		for x in range(width):
 			var n := noise.get_noise_2d(float(x), float(y))
 			var neb: float = clamp(n * 0.08, 0.0, 0.1)
-			img.set_pixel(x, y, Color(0.01 + neb * 0.5, 0.01 + neb * 0.35, 0.035 + neb * 0.7))
+			img.set_pixel(x, y, Color(0.01+neb*0.5, 0.01+neb*0.35, 0.035+neb*0.7))
 	var rng := RandomNumberGenerator.new(); rng.seed = GameDatabase.world_seed
 	for _i in range(int(width * height * 0.012)):
-		var bri: float  = rng.randf_range(0.35, 1.0)
-		var tint: float = rng.randf_range(0.85, 1.0)
-		img.set_pixel(rng.randi_range(0, width - 1), rng.randi_range(0, height - 1),
-			Color(bri, bri * tint, bri))
+		var bri: float = rng.randf_range(0.35, 1.0); var tint: float = rng.randf_range(0.85, 1.0)
+		img.set_pixel(rng.randi_range(0,width-1), rng.randi_range(0,height-1), Color(bri,bri*tint,bri))
 	return ImageTexture.create_from_image(img)
 
 func _process(delta: float) -> void:

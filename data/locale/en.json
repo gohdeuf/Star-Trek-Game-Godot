@@ -61,5 +61,6 @@
   "crew.emergency_ai":"EMERGENCY: AI Autopilot engaged!","crew.ai_disengaged":"Emergency AI disengaged",
   "reactor.am_on":"Ship Reactor: AM production ACTIVE","reactor.am_off":"Ship Reactor: AM production STOPPED",
   "part.mining_drill": "Mining Drill",
-  "station.orbital": "[ORBIT]"
+  "station.orbital": "[ORBIT]",
+  "help.bridge": "C - Bridge view (first-person, no gimbal lock)"
 }

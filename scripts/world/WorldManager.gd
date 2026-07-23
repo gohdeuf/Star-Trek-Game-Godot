@@ -50,53 +50,50 @@ func _load_sector(sector_id: String) -> void:
 	star.global_position = system["position"]; star.set_system_name(system["name"])
 
 	for pd in system["planets"]:
-		var planet := planet_scene.instantiate(); container.add_child(planet); planet.setup(pd, star)
+		var planet := planet_scene.instantiate(); container.add_child(planet)
+		planet.setup(pd, star)
 		for md in pd.get("moons", []):
 			var moon := moon_scene.instantiate(); container.add_child(moon)
 			moon.name = String(md["name"]).replace(" ", "_")
 			moon.moon_display_name = String(md["name"])
-			moon.setup(planet, md["orbit_radius"], md["angular_speed_deg"])
+			# Mondradius aus Daten – echte Proportionen (Erde=4.0, Luna=1.1, Ganymed=1.6 usw.)
+			var moon_r: float = float(md.get("radius", 0.8))
+			moon.setup(planet, float(md["orbit_radius"]), float(md["angular_speed_deg"]), moon_r)
 
 	var sector_save := GameDatabase.load_sector_data(sector_id)
 
-	# Feste Stationsparts
 	for sd in sector_save.get("stations", []):
-		var inst: Node3D = _instantiate_station_part(sd.get("type", "station"))
+		var inst: Node3D = _instantiate_station_part(sd.get("type","station"))
 		container.add_child(inst)
-		inst.global_position = Vector3(float(sd.get("pos_x",0)), float(sd.get("pos_y",0)), float(sd.get("pos_z",0)))
+		inst.global_position = Vector3(
+			float(sd.get("pos_x",0)), float(sd.get("pos_y",0)), float(sd.get("pos_z",0)))
 
-	# Orbitalstationen
 	for os_data in sector_save.get("orbital_stations", []):
-		var planet_name: String = str(os_data.get("planet_name", ""))
+		var planet_name: String = str(os_data.get("planet_name",""))
 		var planet_node: Node3D = _find_planet_by_name(container, planet_name)
 		if planet_node == null: continue
-		var orbiter := StationOrbiter.new()
-		container.add_child(orbiter)
-		orbiter.orbit_id = str(os_data.get("orbit_id", ""))
+		var orbiter := StationOrbiter.new(); container.add_child(orbiter)
+		orbiter.orbit_id = str(os_data.get("orbit_id",""))
 		orbiter.setup(
 			planet_node,
 			float(os_data.get("orbit_radius",   50.0)),
-			float(os_data.get("orbit_angle_deg", 0.0)),
-			float(os_data.get("orbit_speed_deg", 0.2))
-		)
-		for pd in os_data.get("parts", []):
-			var part_inst: Node3D = _instantiate_station_part(pd.get("type", "station"))
+			float(os_data.get("orbit_angle_deg",  0.0)),
+			float(os_data.get("orbit_speed_deg",  0.2)))
+		for pd2 in os_data.get("parts", []):
+			var part_inst: Node3D = _instantiate_station_part(pd2.get("type","station"))
 			orbiter.add_child(part_inst)
 			part_inst.position = Vector3(
-				float(pd.get("off_x", 0.0)),
-				float(pd.get("off_y", 0.0)),
-				float(pd.get("off_z", 0.0))
-			)
+				float(pd2.get("off_x",0.0)), float(pd2.get("off_y",0.0)), float(pd2.get("off_z",0.0)))
 
 	for sh in sector_save.get("ships", []):
 		var npc := npc_ship_scene.instantiate(); container.add_child(npc)
-		npc.global_position = Vector3(float(sh.get("pos_x",0)), float(sh.get("pos_y",0)), float(sh.get("pos_z",0)))
+		npc.global_position = Vector3(
+			float(sh.get("pos_x",0)), float(sh.get("pos_y",0)), float(sh.get("pos_z",0)))
 
 func _find_planet_by_name(container: Node3D, planet_name: String) -> Node3D:
 	for child in container.get_children():
 		if not child is Planet: continue
-		if (child as Planet).planet_data.get("name", "") == planet_name:
-			return child
+		if (child as Planet).planet_data.get("name","") == planet_name: return child
 	return null
 
 func _instantiate_station_part(part_type: String) -> Node3D:
@@ -118,17 +115,16 @@ func _unload_sector(sector_id: String) -> void:
 func _save_sector_planet_resources(sector_id: String, container: Node3D) -> void:
 	for child in container.get_children():
 		if not child is Planet: continue
-		var planet: Planet = child as Planet
-		GameDatabase.save_planet_state(sector_id, planet.planet_data["name"],
-			planet.planet_data["resources"]["current"],
-			planet.planet_data.get("deuterium", {}).get("current", 0.0))
+		var p: Planet = child as Planet
+		GameDatabase.save_planet_state(sector_id, p.planet_data["name"],
+			p.planet_data["resources"]["current"],
+			p.planet_data.get("deuterium",{}).get("current",0.0))
 
 func _save_orbital_station_angles(sector_id: String, container: Node3D) -> void:
 	for child in container.get_children():
 		if not child.is_in_group("station_orbiters"): continue
-		var oid: String   = str(child.get("orbit_id"))
-		var angle: float  = float(child.get("orbit_angle_deg"))
-		GameDatabase.save_orbital_station_angle(sector_id, oid, angle)
+		GameDatabase.save_orbital_station_angle(
+			sector_id, str(child.get("orbit_id")), float(child.get("orbit_angle_deg")))
 
 func save_all_sector_resources() -> void:
 	for sector_id in _loaded_sectors.keys():

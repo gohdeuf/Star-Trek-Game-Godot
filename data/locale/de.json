@@ -61,5 +61,6 @@
   "crew.emergency_ai":"NOTFALL: KI-Autopilot uebernimmt!","crew.ai_disengaged":"Notfall-KI deaktiviert",
   "reactor.am_on":"Schiff-Reaktor: AM-Produktion AKTIV","reactor.am_off":"Schiff-Reaktor: AM-Produktion GESTOPPT",
   "part.mining_drill": "Abbau-Bohrer",
-  "station.orbital": "[ORBIT]"
+  "station.orbital": "[ORBIT]",
+  "help.bridge": "C - Brückenansicht (Erste-Person, kein Gimbal-Lock)"
 }
